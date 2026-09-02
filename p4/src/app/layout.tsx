@@ -1,0 +1,145 @@
+import "@/styles/globals.css"
+
+import { GoogleTagManager } from "@next/third-parties/google"
+import type { Metadata, Viewport } from "next"
+import Script from "next/script"
+import { NuqsAdapter } from "nuqs/adapters/next/app"
+import type { WebSite, WithContext } from "schema-dts"
+
+import { Providers } from "@/components/providers"
+import { META_THEME_COLORS, SITE_INFO, X_HANDLE } from "@/config/site"
+import { USER } from "@/features/portfolio/data/user"
+import { fontVariables } from "@/lib/fonts"
+
+function getWebSiteJsonLd(): WithContext<WebSite> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_INFO.name,
+    url: SITE_INFO.url,
+    alternateName: [USER.username],
+  }
+}
+
+// Thanks @shadcn-ui, @tailwindcss
+const darkModeScript = String.raw`
+  try {
+    if (localStorage.theme === 'dark' || ((!('theme' in localStorage) || localStorage.theme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', '${META_THEME_COLORS.dark}')
+    }
+  } catch (_) {}
+
+  try {
+    if (/(Mac|iPhone|iPod|iPad)/i.test(navigator.platform)) {
+      document.documentElement.classList.add('os-macos')
+    }
+  } catch (_) {}
+`
+
+export const metadata: Metadata = {
+  metadataBase: new URL(SITE_INFO.url),
+  title: {
+    template: `%s – ${SITE_INFO.name}`,
+    default: `${USER.displayName} – ${USER.jobTitle}`,
+  },
+  description: SITE_INFO.description,
+  keywords: SITE_INFO.keywords,
+  authors: [
+    {
+      name: "ncdai",
+      url: SITE_INFO.url,
+    },
+  ],
+  creator: "ncdai",
+  openGraph: {
+    siteName: SITE_INFO.name,
+    url: "/",
+    type: "profile",
+    locale: "en_US",
+    firstName: USER.firstName,
+    lastName: USER.lastName,
+    username: USER.username,
+    gender: USER.gender,
+    images: [
+      {
+        url: SITE_INFO.ogImage,
+        width: 1200,
+        height: 630,
+        alt: SITE_INFO.name,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: X_HANDLE,
+    creator: X_HANDLE,
+    images: [SITE_INFO.ogImage],
+  },
+  icons: {
+    icon: [
+      {
+        url: "https://assets.chanhdai.com/images/favicon.ico",
+        sizes: "32x32",
+      },
+      {
+        url: "https://assets.chanhdai.com/images/favicon.svg",
+        sizes: "any",
+        type: "image/svg+xml",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "https://assets.chanhdai.com/images/favicon-dark.svg",
+        sizes: "any",
+        type: "image/svg+xml",
+        media: "(prefers-color-scheme: dark)",
+      },
+    ],
+    apple: {
+      url: "https://assets.chanhdai.com/images/apple-touch-icon.png",
+      type: "image/png",
+      sizes: "180x180",
+    },
+  },
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: META_THEME_COLORS.light,
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en" className={fontVariables} suppressHydrationWarning>
+      <head>
+        <Script
+          id="dark-mode"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: darkModeScript }}
+        />
+        <Script
+          id="json-ld"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(getWebSiteJsonLd()).replace(/</g, "\\u003c"),
+          }}
+        />
+      </head>
+      <body>
+
+        {process.env.NEXT_PUBLIC_GTM_ID && (
+          <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID} />
+        )}
+
+        <Providers>
+          <NuqsAdapter>{children}</NuqsAdapter>
+        </Providers>
+      </body>
+    </html>
+  )
+}

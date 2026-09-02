@@ -1,0 +1,79 @@
+"use client"
+
+import { useTiks } from "@rexa-developer/tiks/react"
+import { PhoneIcon } from "lucide-react"
+import { useHotkeys } from "react-hotkeys-hook"
+import { toast } from "sonner"
+
+import { useIsClient } from "@/hooks/use-is-client"
+import { trackEvent } from "@/lib/events"
+import { CopyButton } from "@/registry/components/copy-button"
+import { copyToClipboardWithEvent } from "@/utils/copy"
+import { decodePhoneNumber, formatPhoneNumber } from "@/utils/string"
+
+import {
+  IntroItem,
+  IntroItemContent,
+  IntroItemIcon,
+  IntroItemLink,
+} from "./intro-item"
+
+type PhoneItemProps = {
+  phoneNumber: string
+}
+
+export function PhoneItem({ phoneNumber }: PhoneItemProps) {
+  const isClient = useIsClient()
+  const phoneNumberDecoded = decodePhoneNumber(phoneNumber)
+  const phoneNumberFormatted = formatPhoneNumber(phoneNumberDecoded)
+
+  const { success } = useTiks()
+
+  useHotkeys("shift+p", () => {
+    copyToClipboardWithEvent(phoneNumberDecoded, {
+      name: "copy_phone_number",
+      properties: {
+        method: "keyboard",
+        key: "shift+p",
+      },
+    })
+    success()
+    toast.success("Phone number copied")
+  })
+
+  return (
+    <IntroItem className="group">
+      <IntroItemIcon>
+        <PhoneIcon />
+      </IntroItemIcon>
+
+      <IntroItemContent>
+        <IntroItemLink
+          href={isClient ? `tel:${phoneNumberDecoded}` : "#"}
+          aria-label={
+            isClient ? `Call ${phoneNumberFormatted}` : "Phone number"
+          }
+        >
+          {isClient ? phoneNumberFormatted : "[Phone protected]"}
+        </IntroItemLink>
+      </IntroItemContent>
+
+      <div className="-translate-x-3 opacity-0 transition-opacity ease-out group-hover:opacity-100">
+        <CopyButton
+          className="rounded-md border-none text-muted-foreground [&_svg:not([class*='size-'])]:size-3.5"
+          variant="ghost"
+          size="icon-xs"
+          text={isClient ? phoneNumberDecoded : "[Phone protected]"}
+          onCopySuccess={() => {
+            trackEvent({
+              name: "copy_phone_number",
+              properties: {
+                method: "button",
+              },
+            })
+          }}
+        />
+      </div>
+    </IntroItem>
+  )
+}

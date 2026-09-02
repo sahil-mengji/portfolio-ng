@@ -1,0 +1,126 @@
+import type { TechStack } from "../types/tech-stack"
+
+export const TECH_STACK: TechStack[] = [
+  {
+    key: "js",
+    title: "JavaScript",
+    href: "https://developer.mozilla.org/en-US/docs/Web/JavaScript",
+    categories: ["Languages"],
+  },
+  {
+    key: "typescript",
+    title: "TypeScript",
+    href: "https://www.typescriptlang.org/",
+    categories: ["Languages"],
+  },
+  {
+    key: "cpp",
+    title: "C++",
+    href: "https://isocpp.org/",
+    categories: ["Languages"],
+  },
+  {
+    key: "python",
+    title: "Python",
+    href: "https://www.python.org/",
+    categories: ["Languages"],
+  },
+  {
+    key: "react",
+    title: "React",
+    href: "https://react.dev/",
+    categories: ["Frontend"],
+  },
+  {
+    key: "nextjs",
+    title: "Next.js",
+    href: "https://nextjs.org/",
+    categories: ["Frontend"],
+    theme: true,
+  },
+  {
+    key: "tailwindcss",
+    title: "Tailwind CSS",
+    href: "https://tailwindcss.com/",
+    categories: ["Frontend"],
+  },
+  {
+    key: "shadcn-ui",
+    title: "shadcn/ui",
+    href: "https://ui.shadcn.com/",
+    categories: ["Frontend"],
+    theme: true,
+  },
+  {
+    key: "redux",
+    title: "Redux",
+    href: "https://redux.js.org/",
+    categories: ["Frontend"],
+  },
+  {
+    key: "react-native",
+    title: "React Native",
+    href: "https://reactnative.dev/",
+    categories: ["Frontend"],
+  },
+  {
+    key: "nodejs",
+    title: "Node.js",
+    href: "https://nodejs.org/",
+    categories: ["Backend & Database"],
+  },
+  {
+    key: "express",
+    title: "Express.js",
+    href: "https://expressjs.com/",
+    categories: ["Backend & Database"],
+  },
+  {
+    key: "mongodb",
+    title: "MongoDB",
+    href: "https://www.mongodb.com/",
+    categories: ["Backend & Database"],
+  },
+  {
+    key: "prisma",
+    title: "Prisma",
+    href: "https://www.prisma.io/",
+    categories: ["Backend & Database"],
+  },
+  {
+    key: "firebase",
+    title: "Firebase",
+    href: "https://firebase.google.com/",
+    categories: ["Backend & Database"],
+  },
+  {
+    key: "aws",
+    title: "AWS",
+    href: "https://aws.amazon.com/",
+    categories: ["Backend & Database"],
+  },
+  {
+    key: "docker",
+    title: "Docker",
+    href: "https://www.docker.com/",
+    categories: ["Dev Tools"],
+  },
+  {
+    key: "git",
+    title: "Git",
+    href: "https://git-scm.com/",
+    categories: ["Dev Tools"],
+  },
+  {
+    key: "figma",
+    title: "Figma",
+    href: "https://www.figma.com/",
+    categories: ["Design"],
+  },
+  {
+    key: "illustrator",
+    title: "Adobe Illustrator",
+    href: "https://www.adobe.com/products/illustrator.html",
+    categories: ["Design"],
+  },
+]
