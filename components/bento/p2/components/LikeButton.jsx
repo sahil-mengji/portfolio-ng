@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 
 const LikeButton = () => {
-  const [isLiked, setIsLiked] = useState(() => {
-    return localStorage.getItem("liked") === "true";
-  });
+  const [isLiked, setIsLiked] = useState(false);
+  useEffect(() => {
+    try {
+      setIsLiked(localStorage.getItem("liked") === "true");
+    } catch {}
+  }, []);
 
   const handleClick = () => {
     setIsLiked((prev) => !prev);

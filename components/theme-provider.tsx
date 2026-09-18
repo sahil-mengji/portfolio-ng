@@ -1,14 +1,25 @@
 'use client';
 
 import * as React from 'react';
+import { flushSync } from 'react-dom';
 import { ThemeProvider as NextThemesProvider, useTheme } from 'next-themes';
-import { useThemeColor } from '@/lib/color-utils';
+import { useThemeColor, applyPaletteToDOM, generateColorPalette } from '@/lib/color-utils';
 import { cn } from '@/lib/utils';
+
+export type ThemeOrigin = Element | null;
 
 type ThemeColorContextProps = {
   color: string;
   palette: ReturnType<typeof import('@/lib/color-utils').generateColorPalette>;
-  updatePalette: (color: string) => void;
+  /** Drag path: debounced site-wide apply w/ circular reveal (picker stays live locally). */
+  updatePalette: (color: string, origin?: ThemeOrigin) => void;
+  /** Discrete path: immediate site-wide apply w/ circular reveal. */
+  commitPalette: (color: string, origin?: ThemeOrigin) => void;
+  /** Flush a pending debounced commit immediately (e.g. drag release). */
+  flushPalette: (origin?: ThemeOrigin) => void;
+  resetPalette: (origin?: ThemeOrigin) => void;
+  isOverridden: boolean;
+  defaultColor: string;
 };
 
 const ThemeColorContext = React.createContext<ThemeColorContextProps | null>(null);
@@ -50,45 +61,137 @@ export function ThemeProvider({
   children,
   ...props
 }: React.ComponentProps<typeof NextThemesProvider>) {
-  const { color, palette, updatePalette } = useThemeColor();
+  const theme = useThemeColor();
+  const { color, palette, isOverridden, defaultColor } = theme;
+  const commitRef = React.useRef(theme.updatePalette);
+  commitRef.current = theme.updatePalette;
 
-  // Automate: expose tokens as CSS vars – button visibility needs proper contrast vs site bg (primary)
+  // Site-wide commit with a Telegram-style circular reveal growing from the
+  // origin element (the color wheel). Falls back to an instant apply when
+  // View Transitions are unsupported or reduced motion is preferred.
+  const revealCommit = React.useCallback((hex: string, origin?: ThemeOrigin) => {
+    const normalized = hex.toLowerCase();
+    const isDefault = normalized === defaultColor.toLowerCase();
+    // Sync DOM vars + React state together inside the transition callback so
+    // the "new" snapshot contains the FULL new theme — var-driven surfaces
+    // (background grid, cards) as well as context-driven ones. (The passive
+    // effect below stays as backup for mount + non-transition commits.)
+    const commit = () => {
+      try {
+        applyPaletteToDOM(generateColorPalette(hex), !isDefault);
+      } catch {
+        // ignore invalid hex
+      }
+      commitRef.current(hex);
+    };
+    try {
+      const doc = document as Document & {
+        startViewTransition?: (cb: () => void) => { ready: Promise<void> };
+      };
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!doc.startViewTransition || reduce) {
+        commit();
+        return;
+      }
+      let x = window.innerWidth / 2;
+      let y = window.innerHeight / 2;
+      if (origin instanceof Element) {
+        const r = origin.getBoundingClientRect();
+        x = r.left + r.width / 2;
+        y = r.top + r.height / 2;
+      }
+      const maxR = Math.hypot(
+        Math.max(x, window.innerWidth - x),
+        Math.max(y, window.innerHeight - y),
+      );
+      const t = doc.startViewTransition(() => {
+        flushSync(commit);
+      });
+      t.ready
+        .then(() => {
+          document.documentElement.animate(
+            {
+              clipPath: [
+                `circle(0px at ${x}px ${y}px)`,
+                `circle(${maxR}px at ${x}px ${y}px)`,
+              ],
+            },
+            {
+              duration: 550,
+              easing: 'ease-in-out',
+              pseudoElement: '::view-transition-new(root)',
+            } as KeyframeAnimationOptions,
+          );
+        })
+        .catch(() => {
+          // transition aborted — new state already applied
+        });
+    } catch {
+      commit();
+    }
+  }, [defaultColor]);
+
+  // Debounced drag path: the picker block stays live via local state while
+  // dragging; the whole site applies ~300ms after the last change.
+  const pendingRef = React.useRef<{ hex: string; origin: ThemeOrigin } | null>(null);
+  const timerRef = React.useRef(0);
+  const updatePalette = React.useCallback(
+    (hex: string, origin: ThemeOrigin = null) => {
+      pendingRef.current = { hex, origin };
+      window.clearTimeout(timerRef.current);
+      timerRef.current = window.setTimeout(() => {
+        const p = pendingRef.current;
+        pendingRef.current = null;
+        if (p) revealCommit(p.hex, p.origin);
+      }, 300);
+    },
+    [revealCommit]
+  );
+  const flushPalette = React.useCallback(
+    (origin?: ThemeOrigin) => {
+      window.clearTimeout(timerRef.current);
+      const p = pendingRef.current;
+      pendingRef.current = null;
+      if (p) revealCommit(p.hex, origin ?? p.origin);
+    },
+    [revealCommit]
+  );
+  const commitPalette = React.useCallback(
+    (hex: string, origin: ThemeOrigin = null) => {
+      window.clearTimeout(timerRef.current);
+      pendingRef.current = null;
+      revealCommit(hex, origin);
+    },
+    [revealCommit]
+  );
+  const resetPalette = React.useCallback(
+    (origin: ThemeOrigin = null) => {
+      window.clearTimeout(timerRef.current);
+      pendingRef.current = null;
+      // updatePalette derives isOverridden from hex vs default — committing
+      // the default color IS the reset.
+      revealCommit(defaultColor, origin);
+    },
+    [revealCommit, defaultColor]
+  );
+
   React.useEffect(() => {
-    const r = document.documentElement
-    const p: any = palette
-    const isLight = p.primaryForeground === "#000000"
-    // primary button must contrast site bg (primary) – use brand (darker) on light, secondary (lighter) on dark
-    const btnPrimary = isLight ? p.brand : p.secondary
-    const btnPrimaryFg = isLight ? p.brandForeground : p.secondaryForeground
-    r.style.setProperty("--primary", btnPrimary)
-    r.style.setProperty("--primary-foreground", btnPrimaryFg)
-    r.style.setProperty("--secondary", p.surface)
-    r.style.setProperty("--secondary-foreground", p.cardText ?? p.text)
-    r.style.setProperty("--accent", p.brand)
-    r.style.setProperty("--accent-foreground", p.brandForeground)
-    r.style.setProperty("--muted", p.base)
-    r.style.setProperty("--muted-foreground", p.secondaryText)
-    r.style.setProperty("--card", p.surface)
-    r.style.setProperty("--card-foreground", p.cardText ?? p.text)
-    r.style.setProperty("--popover", p.surface)
-    r.style.setProperty("--popover-foreground", p.cardText ?? p.text)
-    r.style.setProperty("--border", p.brand)
-    r.style.setProperty("--input", p.brand)
-    r.style.setProperty("--ring", p.brand)
-    // keep legacy vars for Text/Navbar
-    r.style.setProperty("--surface", p.surface)
-    r.style.setProperty("--text", p.text)
-    r.style.setProperty("--card-text", p.cardText ?? p.text)
-    r.style.setProperty("--card-muted", p.cardSecondaryText ?? p.secondaryText)
-    r.style.setProperty("--grid-ink", p.gridInk ?? p.text)
-    r.style.setProperty("--background", p.primary)
-    r.style.setProperty("--foreground", p.text)
-  }, [palette])
+    return () => window.clearTimeout(timerRef.current);
+  }, []);
 
-  const colorValue = { color, palette, updatePalette };
+  // Universal theming only when overridden; otherwise respect system light/dark (next-themes class)
+  // Committed palette syncs to DOM (covers mount + debounced drag commits + discrete picks).
+  React.useEffect(() => {
+    applyPaletteToDOM(palette, isOverridden);
+  }, [palette, isOverridden])
+
+  const colorValue = React.useMemo(
+    () => ({ color, palette, updatePalette, commitPalette, flushPalette, resetPalette, isOverridden, defaultColor }),
+    [color, palette, updatePalette, commitPalette, flushPalette, resetPalette, isOverridden, defaultColor]
+  );
 
   return (
-    <NextThemesProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange {...props}>
+    <NextThemesProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange {...props}>
       <ThemeColorContext.Provider value={colorValue}>{children}</ThemeColorContext.Provider>
     </NextThemesProvider>
   );

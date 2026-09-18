@@ -1,8 +1,8 @@
 "use client"
 
-import React, { useEffect, useState, useMemo } from "react"
+import React, { useEffect, useState, useMemo, memo } from "react"
 import DraftingGridBackground from "./DraftingGridBackground"
-import { useThemeColorContext } from "@/components/theme-provider"
+import { defaultPalette } from "@/lib/color-utils"
 
 interface AdaptiveDraftingGridBackgroundProps {
   majorEvery?: number
@@ -21,8 +21,12 @@ interface AdaptiveDraftingGridBackgroundProps {
  * is pinned to the bottom‑left of the viewport. Extra grid
  * units cause the pattern to overflow to the top and right,
  * which is clipped by the container.
+ *
+ * Colors resolve via CSS vars (var(--grid-bg)/var(--grid-ink)) with default-
+ * palette fallbacks: no context subscription, so the grid never re-renders
+ * on theme drags — the browser repaints it instantly from preview DOM writes.
  */
-export default function AdaptiveDraftingGridBackground({
+const AdaptiveDraftingGridBackground = memo(function AdaptiveDraftingGridBackground({
   majorEvery = 5,
   cellSize = 20,
   bgColor,
@@ -32,12 +36,10 @@ export default function AdaptiveDraftingGridBackground({
   margin = 60,
   extraUnits = 2,
 }: AdaptiveDraftingGridBackgroundProps) {
-  const { palette } = useThemeColorContext()
-
   // Primary is site bg, guidelines: white on dark hues, darker shade on light
   // palette.gridBg / gridInk implement the luminance rule
-  const backgroundColor = bgColor ?? (palette as any).gridBg ?? palette.primary
-  const drawingColor = inkColor ?? (palette as any).gridInk ?? palette.primaryForeground
+  const backgroundColor = bgColor ?? `var(--grid-bg, ${defaultPalette.gridBg})`
+  const drawingColor = inkColor ?? `var(--grid-ink, ${defaultPalette.gridInk})`
 
   const [mounted, setMounted] = useState(false)
   const [viewport, setViewport] = useState({
@@ -123,4 +125,6 @@ export default function AdaptiveDraftingGridBackground({
       </div>
     </div>
   )
-}
+})
+
+export default AdaptiveDraftingGridBackground

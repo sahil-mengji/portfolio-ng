@@ -15,6 +15,15 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 
+// Var-aware alpha: plain hex → rgba(); a var(--x, #fallback) expression →
+// color-mix() so themed colors repaint via CSS with zero React re-renders.
+function withAlpha(color: string, alpha: number): string {
+  if (color.trimStart().startsWith("var(")) {
+    return `color-mix(in srgb, ${color} ${Math.round(alpha * 100)}%, transparent)`
+  }
+  return hexToRgba(color, alpha)
+}
+
 // --- Geometry hook (pure calculation) ---
 export function useDraftingGridGeometry(
   xUnits: number,
@@ -24,6 +33,10 @@ export function useDraftingGridGeometry(
   margin = 60
 ) {
   return useMemo(() => {
+    // r3: sin/cos/tan/hypot can differ 1 ulp between server and client JS
+    // engines → hydration mismatch in rendered attributes. Rounding the
+    // transcendental outputs keeps SSR/CSR byte-identical (+,-,*,/ are exact).
+    const r3 = (n: number) => Math.round(n * 1000) / 1000
     const plotW = xUnits * cellSize
     const plotH = yUnits * cellSize
     const LEFT = margin
@@ -108,7 +121,7 @@ export function useDraftingGridGeometry(
       const ticks = []
       for (let deg = 0; deg <= 90; deg += 5) {
         const rad = (deg * Math.PI) / 180
-        const dir = { x: Math.cos(rad), y: -Math.sin(rad) }
+        const dir = { x: r3(Math.cos(rad)), y: r3(-Math.sin(rad)) }
         const half = Math.min(8, Math.max(2, cellSize * 0.2))
         ticks.push({
           x1: LEFT + (radiusPx - half) * dir.x,
@@ -123,8 +136,8 @@ export function useDraftingGridGeometry(
         path: `M ${LEFT} ${BOTTOM - radiusPx} A ${radiusPx} ${radiusPx} 0 0 1 ${LEFT + radiusPx} ${BOTTOM}`,
         ticks,
         label: {
-          x: LEFT + labelDist * Math.cos(labelRad),
-          y: BOTTOM - labelDist * Math.sin(labelRad),
+          x: LEFT + labelDist * r3(Math.cos(labelRad)),
+          y: BOTTOM - labelDist * r3(Math.sin(labelRad)),
           text: String(r),
         },
       }
@@ -133,12 +146,13 @@ export function useDraftingGridGeometry(
     // angle guides
     const angleGuides = [15, 30, 45, 60].map((angle) => {
       const rad = (angle * Math.PI) / 180
-      const dyAtRight = plotW * Math.tan(rad)
+      const tan = r3(Math.tan(rad))
+      const dyAtRight = plotW * tan
       const end =
         dyAtRight <= plotH
           ? { x: RIGHT, y: BOTTOM - dyAtRight }
-          : { x: LEFT + plotH / Math.tan(rad), y: TOP }
-      const lineLength = Math.hypot(end.x - LEFT, end.y - BOTTOM) || 1
+          : { x: LEFT + plotH / tan, y: TOP }
+      const lineLength = r3(Math.hypot(end.x - LEFT, end.y - BOTTOM)) || 1
       const targetDist = 0.3 * Math.min(plotW, plotH)
       const t = Math.min(0.85, Math.max(0.12, targetDist / lineLength))
       return {
@@ -222,11 +236,11 @@ const DraftingGridBackground = forwardRef<
       margin
     )
 
-    const majorStroke = hexToRgba(inkColor, 0.29)
-    const minorStroke = hexToRgba(inkColor, 0.26)
-    const guideStroke = hexToRgba(inkColor, 0.26)
-    const labelFill = hexToRgba(inkColor, 0.56)
-    const tickStroke = hexToRgba(inkColor, 0.42)
+    const majorStroke = withAlpha(inkColor, 0.29)
+    const minorStroke = withAlpha(inkColor, 0.26)
+    const guideStroke = withAlpha(inkColor, 0.26)
+    const labelFill = withAlpha(inkColor, 0.56)
+    const tickStroke = withAlpha(inkColor, 0.42)
 
     const { LEFT, TOP, RIGHT, BOTTOM, svgW, svgH } = geometry
     const tickOuter = 24
@@ -242,7 +256,7 @@ const DraftingGridBackground = forwardRef<
         style={{ display: "block", backgroundColor: bgColor, ...style }}
         className={className}
       >
-        <rect x={0} y={0} width={svgW} height={svgH} fill={bgColor} />
+        <rect x={0} y={0} width={svgW} height={svgH} style={{ fill: bgColor }} />
 
         {showArcs &&
           geometry.arcs.map((arc, idx) => (
@@ -250,7 +264,7 @@ const DraftingGridBackground = forwardRef<
               <path
                 d={arc.path}
                 fill="none"
-                stroke={guideStroke}
+                style={{ stroke: guideStroke }}
                 strokeWidth={1}
               />
               {arc.ticks.map((t, ti) => (
@@ -260,7 +274,7 @@ const DraftingGridBackground = forwardRef<
                   y1={t.y1}
                   x2={t.x2}
                   y2={t.y2}
-                  stroke={guideStroke}
+                  style={{ stroke: guideStroke }}
                   strokeWidth={0.5}
                 />
               ))}
@@ -269,14 +283,14 @@ const DraftingGridBackground = forwardRef<
                 y={arc.label.y - 7}
                 width={20}
                 height={14}
-                fill={bgColor}
+                style={{ fill: bgColor }}
               />
               <text
                 x={arc.label.x}
                 y={arc.label.y + 3}
                 textAnchor="middle"
                 fontSize={10}
-                fill={labelFill}
+                style={{ fill: labelFill }}
               >
                 {arc.label.text}
               </text>
@@ -290,7 +304,7 @@ const DraftingGridBackground = forwardRef<
             y1={TOP}
             x2={l.x}
             y2={BOTTOM}
-            stroke={l.major ? majorStroke : minorStroke}
+            style={{ stroke: l.major ? majorStroke : minorStroke }}
             strokeWidth={l.major ? 1 : 0.5}
           />
         ))}
@@ -301,7 +315,7 @@ const DraftingGridBackground = forwardRef<
             y1={l.y}
             x2={RIGHT}
             y2={l.y}
-            stroke={l.major ? majorStroke : minorStroke}
+            style={{ stroke: l.major ? majorStroke : minorStroke }}
             strokeWidth={l.major ? 1 : 0.5}
           />
         ))}
@@ -314,7 +328,7 @@ const DraftingGridBackground = forwardRef<
                 y1={BOTTOM}
                 x2={g.end.x}
                 y2={g.end.y}
-                stroke={guideStroke}
+                style={{ stroke: guideStroke }}
                 strokeWidth={1}
                 strokeDasharray="3,2"
               />
@@ -325,14 +339,14 @@ const DraftingGridBackground = forwardRef<
                 height={14}
                 rx={7}
                 ry={7}
-                fill={bgColor}
+                style={{ fill: bgColor }}
               />
               <text
                 x={g.label.x}
                 y={g.label.y + 3}
                 textAnchor="middle"
                 fontSize={10}
-                fill={labelFill}
+                style={{ fill: labelFill }}
               >
                 {g.label.text}
               </text>
@@ -346,7 +360,7 @@ const DraftingGridBackground = forwardRef<
             y1={TOP - tickOuter}
             x2={t.x}
             y2={t.major ? TOP : TOP - tickMinorStop}
-            stroke={tickStroke}
+            style={{ stroke: tickStroke }}
             strokeWidth={0.5}
           />
         ))}
@@ -357,7 +371,7 @@ const DraftingGridBackground = forwardRef<
             y1={t.major ? BOTTOM : BOTTOM + tickMinorStop}
             x2={t.x}
             y2={BOTTOM + tickOuter}
-            stroke={tickStroke}
+            style={{ stroke: tickStroke }}
             strokeWidth={0.5}
           />
         ))}
@@ -368,7 +382,7 @@ const DraftingGridBackground = forwardRef<
             y1={t.y}
             x2={t.major ? LEFT : LEFT - tickMinorStop}
             y2={t.y}
-            stroke={tickStroke}
+            style={{ stroke: tickStroke }}
             strokeWidth={0.5}
           />
         ))}
@@ -379,7 +393,7 @@ const DraftingGridBackground = forwardRef<
             y1={t.y}
             x2={RIGHT + tickOuter}
             y2={t.y}
-            stroke={tickStroke}
+            style={{ stroke: tickStroke }}
             strokeWidth={0.5}
           />
         ))}
@@ -391,7 +405,7 @@ const DraftingGridBackground = forwardRef<
             y={TOP - labelOffset}
             textAnchor="middle"
             fontSize={10}
-            fill={labelFill}
+            style={{ fill: labelFill }}
           >
             {l.value}
           </text>
@@ -403,7 +417,7 @@ const DraftingGridBackground = forwardRef<
             y={BOTTOM + labelOffset}
             textAnchor="middle"
             fontSize={10}
-            fill={labelFill}
+            style={{ fill: labelFill }}
           >
             {l.value}
           </text>
@@ -415,7 +429,7 @@ const DraftingGridBackground = forwardRef<
             y={l.y + 3}
             textAnchor="middle"
             fontSize={10}
-            fill={labelFill}
+            style={{ fill: labelFill }}
           >
             {l.value}
           </text>
@@ -427,7 +441,7 @@ const DraftingGridBackground = forwardRef<
             y={l.y + 3}
             textAnchor="middle"
             fontSize={10}
-            fill={labelFill}
+            style={{ fill: labelFill }}
           >
             {l.value}
           </text>

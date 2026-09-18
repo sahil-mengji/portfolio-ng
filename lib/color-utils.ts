@@ -81,8 +81,7 @@ function getLuminance(hex: string): number {
   })
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs
 }
-export function getGridColors(baseColor: string): { bg: string; ink: string } {
-  const oklch = hexToOklch(baseColor)
+export function getGridColors(baseColor: string): { bg: string; ink: string } {  const oklch = hexToOklch(baseColor)
   const isLight = oklch.l > 0.68 || (oklch.c > 0.16 && oklch.l > 0.55) || getLuminance(baseColor) > 0.52
   if (!isLight) return { bg: baseColor, ink: "#FFFFFF" }
   const tL = Math.max(0.24, oklch.l - 0.42), tC = Math.max(0.02, oklch.c * 0.55)
@@ -140,9 +139,100 @@ export function generateColorPalette(baseColor: string) {
   }
 }
 
+export const DEFAULT_COLOR = "#F6F5F2"
+
+// Default (system) palette, computed once — used as CSS var() fallbacks so
+// var-consuming components render the correct default look with zero
+// context subscription (they update via preview DOM writes, no re-render).
+export const defaultPalette = generateColorPalette(DEFAULT_COLOR)
+
+const THEME_CSS_VARS = ["--primary","--primary-foreground","--secondary","--secondary-soft","--secondary-foreground","--accent","--accent-foreground","--muted","--muted-foreground","--card","--card-foreground","--popover","--popover-foreground","--border","--input","--ring","--surface","--text","--card-text","--card-muted","--grid-bg","--grid-ink","--background","--foreground"] as const
+
+// Imperative DOM writer — updates CSS vars without triggering React renders.
+// Used for 60fps drag previews; React state commits separately (throttled).
+export function applyPaletteToDOM(
+  palette: ReturnType<typeof generateColorPalette>,
+  isOverridden: boolean,
+) {
+  if (typeof document === "undefined") return
+  const r = document.documentElement
+  if (!isOverridden) {
+    THEME_CSS_VARS.forEach((v) => r.style.removeProperty(v))
+    return
+  }
+  const p = palette
+  const isLight = p.primaryForeground === "#000000"
+  const btnPrimary = isLight ? p.brand : p.secondary
+  const btnPrimaryFg = isLight ? p.brandForeground : p.secondaryForeground
+  r.style.setProperty("--primary", btnPrimary)
+  r.style.setProperty("--primary-foreground", btnPrimaryFg)
+  r.style.setProperty("--secondary", p.surface)
+  r.style.setProperty("--secondary-soft", p.secondary)
+  r.style.setProperty("--secondary-foreground", p.cardText ?? p.text)
+  r.style.setProperty("--accent", p.brand)
+  r.style.setProperty("--accent-foreground", p.brandForeground)
+  r.style.setProperty("--muted", p.base)
+  r.style.setProperty("--muted-foreground", p.secondaryText)
+  r.style.setProperty("--card", p.surface)
+  r.style.setProperty("--card-foreground", p.cardText ?? p.text)
+  r.style.setProperty("--popover", p.surface)
+  r.style.setProperty("--popover-foreground", p.cardText ?? p.text)
+  r.style.setProperty("--border", p.brand)
+  r.style.setProperty("--input", p.brand)
+  r.style.setProperty("--ring", p.brand)
+  r.style.setProperty("--surface", p.surface)
+  r.style.setProperty("--text", p.text)
+  r.style.setProperty("--card-text", p.cardText ?? p.text)
+  r.style.setProperty("--card-muted", p.cardSecondaryText ?? p.secondaryText)
+  r.style.setProperty("--grid-bg", p.gridBg ?? p.primary)
+  r.style.setProperty("--grid-ink", p.gridInk ?? p.text)
+  r.style.setProperty("--background", p.primary)
+  r.style.setProperty("--foreground", p.text)
+}
+
+type ThemeColorState = {
+  color: string
+  palette: ReturnType<typeof generateColorPalette>
+  isOverridden: boolean
+}
+
 export function useThemeColor() {
-  const [color, setColor] = useState<string>("#E5E55A")
-  const [palette, setPalette] = useState(() => generateColorPalette("#E5E55A"))
-  const updatePalette = useCallback((c: string) => { setColor(c); setPalette(generateColorPalette(c)) }, [])
-  return { color, palette, updatePalette }
+  // Single state object → 1 render per commit instead of 3 (color+palette+flag).
+  // Plain (urgent) setState: commits run inside document.startViewTransition
+  // via flushSync, and are debounced at the provider level — never per-frame.
+  const [state, setState] = useState<ThemeColorState>(() => {
+    const palette = generateColorPalette(DEFAULT_COLOR)
+    return { color: DEFAULT_COLOR, palette, isOverridden: false }
+  })
+  const updatePalette = useCallback((c: string) => {
+    setState({
+      color: c,
+      palette: generateColorPalette(c),
+      isOverridden: c.toLowerCase() !== DEFAULT_COLOR.toLowerCase(),
+    })
+  }, [])
+  const resetPalette = useCallback(() => {
+    setState({
+      color: DEFAULT_COLOR,
+      palette: generateColorPalette(DEFAULT_COLOR),
+      isOverridden: false,
+    })
+  }, [])
+  return { ...state, updatePalette, resetPalette, defaultColor: DEFAULT_COLOR }
+}
+
+// Readable ink on top of an arbitrary color (near-black on light, white on dark)
+export function readableInkOn(hex: string): string {
+  const { r, g, b } = hexToRgb(hex)
+  const [rs, gs, bs] = [r, g, b].map((v) => {
+    const n = v / 255
+    return n <= 0.03928 ? n / 12.92 : Math.pow((n + 0.055) / 1.055, 2.4)
+  })
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs > 0.35 ? "#141414" : "#FFFFFF"
+}
+
+// Detail ink for ornament: keeps the hue family but is ALWAYS lighter than
+// the card bg, in every theme (mixed toward white, never toward ink).
+export function detailStroke(hueVarWithDashes: string, fallback: string, pct = 45): string {
+  return `color-mix(in oklab, var(${hueVarWithDashes}, ${fallback}) ${pct}%, white)`
 }

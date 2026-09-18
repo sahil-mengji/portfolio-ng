@@ -1,54 +1,80 @@
 "use client"
-import { useRef, useState, useEffect } from "react"
+import { useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { useThemeColorContext } from "@/components/theme-provider"
-
-function hexToRgba(hex: string, a: number) {
-  const h = hex.replace("#", "")
-  const f = h.length === 3 ? h.split("").map((c) => c + c).join("") : h
-  const n = parseInt(f, 16)
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`
-}
+import { getBoxPalette } from "@/components/bento/box-palettes"
 
 export function HomeBox({
   outerClassName = "",
   children,
   className = "",
+  boxKey,
+  allowOverflow = false,
+  surfaceOverride,
+  liveSurface,
+  transparent = false,
 }: {
   outerClassName?: string
   children: React.ReactNode
   className?: string
+  boxKey?: string
+  allowOverflow?: boolean
+  surfaceOverride?: string
+  liveSurface?: string
+  transparent?: boolean
 }) {
-  const { palette } = useThemeColorContext()
-  const ref = useRef<HTMLDivElement>(null)
-  const [mouse, setMouse] = useState({ x: 0, y: 0 })
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const onMove = (e: MouseEvent) => {
-      const r = el.getBoundingClientRect()
-      setMouse({ x: e.clientX - r.left, y: e.clientY - r.top })
+  const { palette: universalPalette, isOverridden } = useThemeColorContext()
+  const palette = useMemo(() => {
+    if (!isOverridden && boxKey) {
+      const boxPalette = getBoxPalette(boxKey)
+      if (boxPalette) return boxPalette
     }
-    el.addEventListener("mousemove", onMove)
-    return () => el.removeEventListener("mousemove", onMove)
-  }, [])
+    return universalPalette
+  }, [universalPalette, isOverridden, boxKey])
 
+  const overflow = allowOverflow ? "overflow-visible" : "overflow-hidden"
+  // Per-card surface override (default mode only — themed mode always follows palette).
+  // liveSurface wins in EVERY mode: the owning box paints per-frame during
+  // drags instead of waiting for the debounced site commit.
+  const useLive = liveSurface != null
+  const surface = liveSurface ?? (!isOverridden && surfaceOverride ? surfaceOverride : palette.surface)
   return (
     <div
-      className={cn("relative group p-[2px] rounded-[26px] transition-all hover:scale-[1.015] shadow-sm", outerClassName)}
-      style={{ background: `linear-gradient(to bottom right, ${hexToRgba(palette.brand, 0.35)}, ${hexToRgba(palette.primary, 0.15)})` }}
+      className={cn(
+        "group relative rounded-[26px] transition-transform",
+        allowOverflow && "overflow-visible",
+        outerClassName
+      )}
     >
-      <div ref={ref} className="relative bg-card rounded-[24px] w-full h-full cursor-pointer overflow-hidden" style={{ background: `color-mix(in oklab, var(--card) 92%, transparent)` } as any}>
-        <div className="hidden group-hover:block absolute inset-0 border border-white/10 rounded-[30px] pointer-events-none" style={{ transform: "translateZ(5px)" }}>
-          <div className="top-[-4px] left-[-4px] absolute w-8 h-8 border-t-[4px] border-l-[4px] rounded-tl-[28px] border-violet-400" />
-          <div className="top-[-4px] right-[-4px] absolute w-8 h-8 border-t-[4px] border-r-[4px] rounded-tr-[28px] border-violet-400" />
-          <div className="bottom-[-4px] left-[-4px] absolute w-8 h-8 border-b-[4px] border-l-[4px] rounded-bl-[28px] border-violet-400" />
-          <div className="right-[-4px] bottom-[-4px] absolute w-8 h-8 border-r-[4px] border-b-[4px] rounded-br-[28px] border-violet-400" />
-        </div>
-        <div className="relative w-full h-full overflow-hidden rounded-[24px] spotlight-card before:absolute before:inset-0 before:opacity-0 group-hover:before:opacity-100 before:transition-opacity" style={{ "--x": `${mouse.x}px`, "--y": `${mouse.y}px` } as any}>
-          <div className={cn("w-full h-full", className)} style={{ background: `radial-gradient(300px circle at var(--x) var(--y), ${hexToRgba(palette.brand, 0.12)}, transparent 70%)` }}>
-            <div className="w-full h-full bg-gradient-to-b from-transparent to-black/5 dark:to-white/5">{children}</div>
+      <div
+        className={cn("relative h-full w-full cursor-pointer rounded-[24px] bg-card", overflow)}
+        style={
+          transparent
+            ? !useLive && (isOverridden || !boxKey)
+              ? ({ background: "transparent" } as any)
+              : ({
+                  background: "transparent",
+                  color: palette.cardText,
+                  ["--card" as any]: surface,
+                  ["--card-foreground" as any]: palette.cardText,
+                  ["--card-text" as any]: palette.cardText,
+                  ["--card-muted" as any]: palette.cardSecondaryText,
+                } as any)
+            : !useLive && (isOverridden || !boxKey)
+              ? ({ background: `color-mix(in oklab, var(--card) 92%, transparent)` } as any)
+              : ({
+                  background: `color-mix(in oklab, ${surface} 92%, transparent)`,
+                  color: palette.cardText,
+                  ["--card" as any]: surface,
+                  ["--card-foreground" as any]: palette.cardText,
+                  ["--card-text" as any]: palette.cardText,
+                  ["--card-muted" as any]: palette.cardSecondaryText,
+                } as any)
+        }
+      >
+        <div className={cn("h-full w-full", className, allowOverflow && "overflow-visible")}>
+          <div className={cn("h-full w-full bg-gradient-to-b from-transparent to-black/5 dark:to-white/5", allowOverflow && "overflow-visible")}>
+            {children}
           </div>
         </div>
       </div>

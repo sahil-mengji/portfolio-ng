@@ -4,10 +4,16 @@ import Link from "next/link"
 import { Text, CardContext } from "@/components/ui/text"
 import { SiteShell } from "@/components/site-shell"
 import { blogPosts } from "@/lib/dummy-data"
-import { useThemeColorContext } from "@/components/theme-provider"
+import { defaultPalette } from "@/lib/color-utils"
+
+const FB = defaultPalette
+const CARD_STYLE = {
+  background: `color-mix(in srgb, var(--surface, ${FB.surface}) 88%, transparent)`,
+  borderColor: `color-mix(in srgb, var(--accent, ${FB.brand}) 18%, transparent)`,
+  boxShadow: `0 1px 2px color-mix(in srgb, var(--accent, ${FB.brand}) 6%, transparent), 0 4px 12px color-mix(in srgb, var(--background, ${FB.primary}) 4%, transparent)`,
+} as const
 
 export default function BlogsPage() {
-  const { palette } = useThemeColorContext()
   return (
     <SiteShell>
       <div className="max-w-3xl space-y-8">
@@ -18,12 +24,8 @@ export default function BlogsPage() {
             <CardContext.Provider key={post.slug} value={true}>
               <Link
                 href={`/blogs/${post.slug}`}
-                className="block rounded-2xl border p-5 backdrop-blur hover:opacity-95 transition hover:scale-[1.01]"
-                style={{
-                  background: `color-mix(in srgb, ${palette.surface} 88%, transparent)`,
-                  borderColor: `color-mix(in srgb, ${palette.brand} 18%, transparent)`,
-                  boxShadow: `0 1px 2px color-mix(in srgb, ${palette.brand} 6%, transparent), 0 4px 12px color-mix(in srgb, ${palette.primary} 4%, transparent)`,
-                }}
+                className="block rounded-2xl border p-5 backdrop-blur hover:opacity-95 transition-transform hover:scale-[1.01]"
+                style={{ ...CARD_STYLE }}
               >
                 <Text.Subheading as="h3" size="sm" className="!text-lg">
                   {post.title}

@@ -3,7 +3,7 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
-import { useThemeColorContext } from "@/components/theme-provider"
+import { defaultPalette } from "@/lib/color-utils"
 
 const textVariants = cva("max-w-full", {
   variants: {
@@ -59,19 +59,24 @@ type BaseProps = {
 
 export const CardContext = React.createContext(false)
 
+// Theme-aware colors via CSS vars — zero context subscription, so Text never
+// re-renders on theme drags; the browser repaints instantly from the preview
+// DOM writes. Fallbacks = default (system) palette for the non-overridden
+// state (vars removed) and for box-scoped --card-text/--card-muted. In-card
+// tokens resolve through HomeBox scope (--card-text set per box palette).
+const FB = defaultPalette
 function useTextColor(variant: NonNullable<TextVariantProps["variant"]>) {
-  const { palette } = useThemeColorContext()
   const inCard = React.useContext(CardContext)
-  const p: any = palette
-  // Automated via CSS vars, but keep JS fallback for inline style; inCard → card tokens
   if (inCard) {
-    if (variant === "caption") return p.cardSecondaryText ?? palette.secondaryText
-    if (variant === "subheading") return p.cardSecondaryText ?? palette.secondaryText
-    return p.cardText ?? palette.text
+    if (variant === "caption" || variant === "subheading")
+      return `var(--card-muted, ${FB.cardSecondaryText})`
+    return `var(--card-text, ${FB.cardText})`
   }
-  if (variant === "caption") return palette.secondaryText
-  return palette.text
+  if (variant === "caption") return `var(--muted-foreground, ${FB.secondaryText})`
+  return `var(--text, ${FB.text})`
 }
+
+const BRAND_VAR = `var(--accent, ${FB.brand})`
 
 // Heading: h1 by default
 const Heading = React.forwardRef<HTMLHeadingElement, BaseProps & TextVariantProps & React.HTMLAttributes<HTMLHeadingElement> & { as?: "h1" | "h2" | "h3" | "h4" }>(
@@ -131,12 +136,11 @@ Body.displayName = "Text.Body"
 const Link = React.forwardRef<HTMLAnchorElement, BaseProps & TextVariantProps & React.AnchorHTMLAttributes<HTMLAnchorElement>>(
   ({ children, className, style, color, variant = "link", size, ...props }, ref) => {
     const themeColor = useTextColor("link")
-    const { palette } = useThemeColorContext()
     return (
       <a
         ref={ref}
         className={cn(textVariants({ variant, size, className }))}
-        style={{ color: color ?? themeColor, textDecorationColor: (palette as any).brand ?? themeColor, ...style }}
+        style={{ color: color ?? themeColor, textDecorationColor: color ?? BRAND_VAR, ...style }}
         {...props}
       >
         {children}

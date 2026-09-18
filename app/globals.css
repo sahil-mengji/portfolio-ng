@@ -4,6 +4,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Hide main page scrollbar (scroll-ruler acts as the indicator) */
+html,
+body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}
+
 @theme inline {
   --font-heading: var(--font-instrument-serif);
   --font-sans: var(--font-sans);
@@ -48,7 +59,7 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
+  --background: #EDEEFD;
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -124,48 +135,125 @@
   --pattern-glow: oklch(0.82 0.18 146);
 }
 
-/* p2 bento grid – migrated from p2/src/App.css */
+/* ──────────────────────────────────────────────
+   p2 bento grid – migrated from p2/src/App.css
+   Improved naming: .bento-grid (semantic) + .bento-* area classes
+   Legacy .bentogrid / .github / .hsocial etc. kept as aliases for compat
+   ────────────────────────────────────────────── */
+
+/* Primary grid container – granular small squares, 10 max, responsive, centered up to 7xl */
+.bento-grid,
 .bentogrid {
+  width: 100%;
+  max-width: 80rem; /* 7xl */
+  margin-inline: auto;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: 180px 140px 180px 180px 180px 180px 180px 180px;
-  grid-template-areas:
-    "github github"
-    "hsocial hsocial"
-    "hresume homebox2"
-    "hresume hlibrary"
-    "hshowcase hlibrary"
-    "hskills hskills"
-    "hquotes hquotes";
+  gap: 16px;
+  justify-content: center;
+  justify-items: stretch;
+  align-items: stretch;
+  overflow: visible;
+  /* Fundamental cell is a fixed 110px square – auto-fit count, rows match columns */
+  grid-template-columns: repeat(auto-fit, 110px);
+  grid-auto-rows: 110px;
+  grid-auto-flow: dense;
 }
-@media (min-width: 768px) {
+
+.bento-grid > *,
+.bentogrid > * {
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Fallback: ensure at very small widths at least 2 square cols */
+@media (max-width: 360px) {
+  .bento-grid,
   .bentogrid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    grid-template-rows: 250px 60px 250px 250px 250px 250px 250px 150px;
-    grid-template-areas:
-      "github github homebox2"
-      "hsocial hsocial hsocial"
-      "hresume hskills hskills"
-      "hresume hshowcase hlibrary"
-      "hexperiments hexperiments hlibrary"
-      "hexperiments hexperiments hnft"
-      "h hidcard hidcard"
-      "hlightboard hlightboard hlightboard";
+    grid-template-columns: repeat(2, 110px);
   }
 }
-.github { grid-area: github; }
-.homebox2 { grid-area: homebox2; }
-.hsocial { grid-area: hsocial; }
-.hskills { grid-area: hskills; }
-.hresume { grid-area: hresume; }
-.hshowcase { grid-area: hshowcase; }
-.hlibrary { grid-area: hlibrary; }
-.hquotes { grid-area: hquotes; }
-.hprojects { grid-area: hprojects; }
-.hexperiments { grid-area: hexperiments; }
-.hnft { grid-area: hnft; }
-.hidcard { grid-area: hidcard; }
-.hlightboard { grid-area: hlightboard; }
+
+/* opt-in full-bleed: still centered but consumes parent width */
+.bento-grid--bleed {
+  max-width: 100%;
+  margin-inline: 0;
+}
+@media (min-width: 768px) {
+  .bento-grid--bleed {
+    max-width: 100%;
+  }
+}
+
+/* ── Semantic area classes – granular small squares (110px base) ── */
+/* Each small square 110px; spans define multiples, dense auto-flow */
+.bento-github     { grid-column: span 8; grid-row: span 2; }
+.bento-like       { grid-column: span 2; grid-row: span 2; }
+.bento-social     { grid-column: span 7; grid-row: span 1; } /* 7-wide bar */
+.bento-skills     { grid-column: span 4; grid-row: span 2; }
+.bento-resume     { grid-column: span 3; grid-row: span 5; }
+.bento-showcase   { grid-column: span 3; grid-row: span 2; }
+.bento-library    { grid-column: span 2; grid-row: span 4; }
+.bento-quotes     { grid-column: span 4; grid-row: span 1; }
+.bento-projects   { grid-column: span 2; grid-row: span 2; }
+.bento-experiments{ grid-column: span 4; grid-row: span 2; }
+.bento-nft        { grid-column: span 2; grid-row: span 2; }
+.bento-id         { grid-column: span 2; grid-row: span 2; }
+.bento-lightboard { grid-column: span 4; grid-row: span 2; }
+.bento-theme      { grid-column: span 4; grid-row: span 2; }
+.bento-stats      { grid-column: span 2; grid-row: span 2; }
+.bento-extra      { grid-column: span 2; grid-row: span 2; }
+.bento-notch      { grid-column: span 3; grid-row: span 2; overflow: visible; }
+.bento-colorpicker { grid-column: span 3; grid-row: span 3; }
+.bento-map        { grid-column: span 4; grid-row: span 2; }
+.bento-gallery    { grid-column: span 3; grid-row: span 3; }
+.bento-list       { grid-column: span 2; grid-row: span 4; }
+.bento-banner     { grid-column: span 5; grid-row: span 2; }
+
+/* As width shrinks, spans gracefully collapse to available columns (auto-fit) */
+/* No per-breakpoint overrides needed – dense flow + span handles it */
+
+/* ── Bento map — small clouds drifting diagonally, tilted into the map plane ── */
+@keyframes bento-cloud-drift {
+  from { transform: translate(-180px, 48px) rotateX(55deg); }
+  to { transform: translate(560px, -48px) rotateX(55deg); }
+}
+@keyframes bento-cloud-drift-b {
+  from { transform: translate(-180px, -36px) rotateX(55deg); }
+  to { transform: translate(560px, 44px) rotateX(55deg); }
+}
+.animate-bento-cloud {
+  animation-name: bento-cloud-drift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.animate-bento-cloud-b {
+  animation-name: bento-cloud-drift-b;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* ── Bento color wheel — remove the package white overlay (3rd inner div)
+   so the full hue disc shows (child 2 is the hue ring — keep it) ── */
+.bento-colorpicker .w-color-wheel > div:nth-child(3) {
+  display: none !important;
+}
+
+/* ── Legacy aliases (deprecated – keep for backward-compat with p2/* imports) ── */
+.github      { grid-area: github; }
+.homebox2    { grid-area: like; }
+.hsocial     { grid-area: social; }
+.hskills     { grid-area: skills; }
+.hresume     { grid-area: resume; }
+.hshowcase   { grid-area: showcase; }
+.hlibrary    { grid-area: library; }
+.hquotes     { grid-area: quotes; }
+.hprojects   { grid-area: projects; }
+.hexperiments{ grid-area: experiments; }
+.hnft        { grid-area: nft; }
+.hidcard     { grid-area: id; }
+.hlightboard { grid-area: lightboard; }
+/* stray "h" from original template – map to projects for compat */
+.h           { grid-area: projects; }
 
 @layer base {
   * {
@@ -180,5 +268,69 @@
   }
   html {
     @apply font-sans;
+  }
+  .maplibregl-popup-content {
+    @apply bg-transparent! shadow-none! p-0! rounded-none!;
+  }
+  .maplibregl-popup-tip {
+    @apply hidden!;
+  }
+  .maplibregl-ctrl-attrib {
+    @apply bg-background! text-muted-foreground! border-border! rounded-md! border! shadow-sm!;
+  }
+  .maplibregl-ctrl-attrib a {
+    @apply text-muted-foreground!;
+  }
+  .maplibregl-ctrl-attrib a:hover {
+    @apply text-foreground!;
+  }
+  .maplibregl-ctrl-attrib-button {
+    @apply bg-transparent! dark:invert;
+  }
+}
+
+/* Theme reveal: the circular clip is driven from JS (origin = picker block).
+   Kill the default fade so only the grow animation shows. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* ── Orbit card: independent per-element motions (compositor-only) ── */
+.jack-svg svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.orbit-rotate,
+.orbit-tick-dial,
+.orbit-medallion {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.orbit-rotate { animation: orbit-spin 48s linear infinite; }
+.orbit-tick-dial { animation: orbit-spin 120s linear infinite; }
+.orbit-medallion { animation: orbit-spin 24s linear infinite; }
+.orbit-dash-drift { animation: dash-drift 60s linear infinite; }
+.orbit-pulse-dot { animation: dot-pulse 4s ease-in-out infinite; }
+.orbit-breathe { animation: breathe 16s ease-in-out infinite; }
+
+@keyframes orbit-spin { to { transform: rotate(360deg); } }
+@keyframes orbit-spin-rev { to { transform: rotate(-360deg); } }
+@keyframes dash-drift { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -100; } }
+@keyframes dot-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+@keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.012); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .orbit-rotate,
+  .orbit-tick-dial,
+  .orbit-medallion,
+  .orbit-dash-drift,
+  .orbit-dash-drift,
+  .orbit-spin-rev-slow,
+  .orbit-pulse-dot,
+  .orbit-breathe {
+    animation: none;
   }
 }

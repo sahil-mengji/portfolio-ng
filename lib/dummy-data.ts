@@ -80,35 +80,150 @@ export const showcaseItems = [
   { title: "Darker on Light", desc: "Light picker → dark shade guidelines", swatch: "gridInk-light" },
 ]
 
-export type WorkExp = {
-  role: string
-  company: string
+export type Role = {
+  title: string
   period: string
-  location: string
   bullets: string[]
+  skills: string[]
+}
+
+export type WorkExp = {
+  company: string
+  location: string
+  logo: string // emoji or URL
+  roles: Role[]
 }
 
 export const workExperience: WorkExp[] = [
   {
-    role: "Senior Frontend Engineer",
     company: "Draft Systems",
-    period: "2024 — Present",
     location: "Remote · Berlin",
-    bullets: ["Led theming system — single picker drives 12 tokens", "Shipped drafting-grid bg with Instrument Serif system", "Floating navbar with hue-tinted tokens"],
+    logo: "https://media.licdn.com/dms/image/v2/D4E0BAQEvdP4_OD_4vA/company-logo_200_200/B4EaBt39NvHoAE-/0/1788549780778/gep_worldwide_logo?e=2147483647&v=beta&t=_Y87nPG6sWkhFmwU18-fYwuQzlzI3JxZFosp5UOMXyI",
+    roles: [
+      {
+        title: "Staff Frontend Engineer",
+        period: "2025 — Present",
+        skills: ["React", "OKLCH", "Design Systems", "TypeScript", "Framer Motion"],
+        bullets: [
+          "Architected unified **theming platform** — single picker drives **12 tokens** across web & native",
+          "Led migration to **OKLCH color space**, cut theme-related bugs by **78%**",
+          "Mentored **4 engineers** on design-system internals",
+        ],
+      },
+      {
+        title: "Senior Frontend Engineer",
+        period: "2023 — 2025",
+        skills: ["React", "Next.js", "Instrument Serif", "CSS Variables"],
+        bullets: [
+          "Built **drafting-grid background** with **Instrument Serif** type system",
+          "Designed **floating navbar** with hue-tinted semantic tokens",
+          "Shipped **color picker** (native input, presets, eyedropper)",
+        ],
+      },
+      {
+        title: "Frontend Engineer",
+        period: "2021 — 2023",
+        skills: ["Next.js", "Framer Motion", "Accessibility", "Bento Grid"],
+        bullets: [
+          "Delivered **Next.js portfolio starters** with motion & a11y",
+          "Implemented **bento-grid layout engine** with dense packing",
+        ],
+      },
+    ],
   },
   {
-    role: "Product Designer",
     company: "Field Studio",
-    period: "2021 — 2024",
     location: "Lisbon",
-    bullets: ["Built bento & editorial layouts", "Design tokens → code pipeline"],
+    logo: "https://media.licdn.com/dms/image/v2/D4E0BAQEvdP4_OD_4vA/company-logo_200_200/B4EaBt39NvHoAE-/0/1788549780778/gep_worldwide_logo?e=2147483647&v=beta&t=_Y87nPG6sWkhFmwU18-fYwuQzlzI3JxZFosp5UOMXyI",
+    roles: [
+      {
+        title: "Lead Product Designer",
+        period: "2022 — 2024",
+        skills: ["Figma", "Design Tokens", "Style Dictionary", "Data Viz"],
+        bullets: [
+          "Defined **design-token pipeline** from **Figma → code** (Style Dictionary)",
+          "Established **bento & editorial layout system** for marketing",
+        ],
+      },
+      {
+        title: "Product Designer",
+        period: "2020 — 2022",
+        skills: ["User Research", "Dashboard Design", "SaaS", "Prototyping"],
+        bullets: [
+          "Designed **dashboard & data-viz interfaces** for SaaS platform",
+          "Ran **usability studies**, cut task-completion time **35%**",
+        ],
+      },
+    ],
   },
   {
-    role: "Frontend Engineer",
     company: "Proto Labs",
-    period: "2019 — 2021",
     location: "London",
-    bullets: ["Next.js portfolios, motion & a11y"],
+    logo: "https://media.licdn.com/dms/image/v2/D4E0BAQEvdP4_OD_4vA/company-logo_200_200/B4EaBt39NvHoAE-/0/1788549780778/gep_worldwide_logo?e=2147483647&v=beta&t=_Y87nPG6sWkhFmwU18-fYwuQzlzI3JxZFosp5UOMXyI",
+    roles: [
+      {
+        title: "Frontend Engineer",
+        period: "2019 — 2020",
+        skills: ["Next.js", "Framer Motion", "WCAG AA", "Performance"],
+        bullets: [
+          "Built performant portfolio sites with **Next.js & Framer Motion**",
+          "Championed **accessibility** — **WCAG AA** across all projects",
+        ],
+      },
+    ],
+  },
+]
+
+export type Education = {
+  school: string
+  degree: string
+  period: string
+  location: string
+  details: string[]
+}
+
+export const education: Education[] = [
+  {
+    school: "Berlin University of the Arts",
+    degree: "M.A. Interface Design",
+    period: "2017 — 2019",
+    location: "Berlin",
+    details: ["Thesis on generative design systems", "Motion & typography focus"],
+  },
+  {
+    school: "Loughborough University",
+    degree: "B.Sc. Computer Science",
+    period: "2014 — 2017",
+    location: "Loughborough",
+    details: ["First-class honours", "HCI & graphics electives"],
+  },
+]
+
+export type Achievement = {
+  title: string
+  org: string
+  year: string
+  description: string
+}
+
+export const achievements: Achievement[] = [
+  {
+    title: "Awwwards Honorable Mention",
+    description: "Portfolio experience cited for interaction craft",
+    org: "Awwwards",
+    year: "2025",
+  },
+  {
+    title: "Design Systems Speaker",
+    description: "Talk on single-picker theming at a Berlin meetup",
+    org: "Design Systems Berlin",
+    year: "2024",
+  },
+  {
+    title: "Open Source — 2k stars",
+    description: "Theming toolkit adopted across portfolio starters",
+    org: "GitHub",
+    year: "2024",
   },
 ]
 
