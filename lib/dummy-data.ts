@@ -82,7 +82,9 @@ export const showcaseItems = [
 
 export type Role = {
   title: string
+  type: string
   period: string
+  duration: string
   bullets: string[]
   skills: string[]
 }
@@ -94,80 +96,189 @@ export type WorkExp = {
   roles: Role[]
 }
 
+const DUMMY_LOGO =
+  "https://media.licdn.com/dms/image/v2/D4E0BAQEvdP4_OD_4vA/company-logo_200_200/B4EaBt39NvHoAE-/0/1788549780778/gep_worldwide_logo?e=2147483647&v=beta&t=_Y87nPG6sWkhFmwU18-fYwuQzlzI3JxZFosp5UOMXyI"
+
 export const workExperience: WorkExp[] = [
   {
-    company: "Draft Systems",
-    location: "Remote · Berlin",
-    logo: "https://media.licdn.com/dms/image/v2/D4E0BAQEvdP4_OD_4vA/company-logo_200_200/B4EaBt39NvHoAE-/0/1788549780778/gep_worldwide_logo?e=2147483647&v=beta&t=_Y87nPG6sWkhFmwU18-fYwuQzlzI3JxZFosp5UOMXyI",
+    company: "GEP Worldwide",
+    location: "Hyderabad, Telangana, India",
+    logo: DUMMY_LOGO,
     roles: [
       {
-        title: "Staff Frontend Engineer",
-        period: "2025 — Present",
-        skills: ["React", "OKLCH", "Design Systems", "TypeScript", "Framer Motion"],
+        title: "Software Engineer Intern",
+        period: "May 2026 — Present",
+        type: "Internship",
+        duration: "5 mos",
+        skills: [],
+        bullets: [],
+      },
+    ],
+  },
+  {
+    company: "E-Cell NITK",
+    location: "Mangaluru, Karnataka, India · On-site",
+    logo: "https://media.licdn.com/dms/image/v2/D560BAQHNOlUgfHzavA/company-logo_200_200/company-logo_200_200/0/1718563404533/ecellnitksurathkal_logo?e=2147483647&v=beta&t=Xd9XBkvnPtcdmfTFBgpcMsiSu_lj3U7w2XAFVrjKpzs",
+    roles: [
+      {
+        title: "Technical Head",
+        period: "04.2026 — Present",
+        type: "Full-time",
+        duration: "5m",
+        skills: [],
         bullets: [
-          "Architected unified **theming platform** — single picker drives **12 tokens** across web & native",
-          "Led migration to **OKLCH color space**, cut theme-related bugs by **78%**",
-          "Mentored **4 engineers** on design-system internals",
+          "Leading **technical initiatives** for E-Cell NITK's digital infrastructure",
+          "Managing the **core engineering team** and delivery ownership",
+          "Setting the **technical roadmap** across platforms",
         ],
       },
       {
-        title: "Senior Frontend Engineer",
-        period: "2023 — 2025",
-        skills: ["React", "Next.js", "Instrument Serif", "CSS Variables"],
+        title: "Webmaster",
+        period: "04.2025 — Present",
+        type: "Part-time",
+        duration: "1y 5m",
+        skills: [],
         bullets: [
-          "Built **drafting-grid background** with **Instrument Serif** type system",
-          "Designed **floating navbar** with hue-tinted semantic tokens",
-          "Shipped **color picker** (native input, presets, eyedropper)",
+          "Overseeing all **web-related operations** across organizational platforms",
+          "Maintaining **high availability** and uptime of web properties",
+          "Ensuring **performance** and reliability of production sites",
         ],
       },
       {
-        title: "Frontend Engineer",
-        period: "2021 — 2023",
-        skills: ["Next.js", "Framer Motion", "Accessibility", "Bento Grid"],
+        title: "Web Developer",
+        period: "01.2024 — 04.2025",
+        type: "Full-time",
+        duration: "1y 4m",
+        skills: ["HTML", "CSS", "JavaScript", "React", "UI/UX Design"],
         bullets: [
-          "Delivered **Next.js portfolio starters** with motion & a11y",
-          "Implemented **bento-grid layout engine** with dense packing",
+          "Crafted organization websites with **modern web technologies** into **responsive, user-friendly** platforms",
+          "Designed **intuitive navigation** and enhanced user experience",
+          "Optimized **site performance** across pages",
         ],
       },
     ],
   },
   {
-    company: "Field Studio",
-    location: "Lisbon",
-    logo: "https://media.licdn.com/dms/image/v2/D4E0BAQEvdP4_OD_4vA/company-logo_200_200/B4EaBt39NvHoAE-/0/1788549780778/gep_worldwide_logo?e=2147483647&v=beta&t=_Y87nPG6sWkhFmwU18-fYwuQzlzI3JxZFosp5UOMXyI",
+    company: "Incident NITK",
+    location: "Mangaluru, Karnataka, India · Freelance",
+    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSXuBoY0DkW3-hupNLTwCIA44q6pqDCuYfWnQ7eKTyZww&s=10",
     roles: [
       {
-        title: "Lead Product Designer",
-        period: "2022 — 2024",
-        skills: ["Figma", "Design Tokens", "Style Dictionary", "Data Viz"],
-        bullets: [
-          "Defined **design-token pipeline** from **Figma → code** (Style Dictionary)",
-          "Established **bento & editorial layout system** for marketing",
-        ],
+        title: "Technical Lead",
+        period: "Jul 2026",
+        type: "Freelance",
+        duration: "1m",
+        skills: [],
+        bullets: [],
       },
+    ],
+  },
+  {
+    company: "ACE-NITK",
+    location: "Mangaluru, Karnataka, India · Part-time",
+    logo: DUMMY_LOGO,
+    roles: [
       {
-        title: "Product Designer",
-        period: "2020 — 2022",
-        skills: ["User Research", "Dashboard Design", "SaaS", "Prototyping"],
+        title: "Web Developer",
+        period: "08.2024 — Present",
+        type: "Part-time",
+        duration: "2y 1m",
+        skills: [],
         bullets: [
-          "Designed **dashboard & data-viz interfaces** for SaaS platform",
-          "Ran **usability studies**, cut task-completion time **35%**",
+          "Developing the **official website** for the Association of Computer Engineers",
+          "Maintaining and **updating** web content and pages",
+          "Keeping the site **responsive and accessible**",
         ],
       },
     ],
   },
   {
-    company: "Proto Labs",
-    location: "London",
-    logo: "https://media.licdn.com/dms/image/v2/D4E0BAQEvdP4_OD_4vA/company-logo_200_200/B4EaBt39NvHoAE-/0/1788549780778/gep_worldwide_logo?e=2147483647&v=beta&t=_Y87nPG6sWkhFmwU18-fYwuQzlzI3JxZFosp5UOMXyI",
+    company: "IEEE NITK",
+    location: "Mangaluru, Karnataka, India · Part-time",
+    logo: DUMMY_LOGO,
     roles: [
       {
-        title: "Frontend Engineer",
-        period: "2019 — 2020",
-        skills: ["Next.js", "Framer Motion", "WCAG AA", "Performance"],
+        title: "Executive Member · CompSoc",
+        period: "09.2024 — Present",
+        type: "Part-time",
+        duration: "2y",
+        skills: [],
         bullets: [
-          "Built performant portfolio sites with **Next.js & Framer Motion**",
-          "Championed **accessibility** — **WCAG AA** across all projects",
+          "Active member of the **Computer Society** chapter",
+          "Organizing **technical workshops** for students",
+          "Driving **community engagement** initiatives",
+        ],
+      },
+    ],
+  },
+  {
+    company: "COSH NITK",
+    location: "Mangaluru, Karnataka, India",
+    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSrVGg_6xrZ5KUsDvosT928dIQOWJXh76ifpN7lEHbDPw&s",
+    roles: [
+      {
+        title: "Graphic Designer",
+        period: "11.2024 — Present",
+        type: "",
+        duration: "1y 10m",
+        skills: [],
+        bullets: [
+          "Designing **visual identity** for the COSH community",
+          "Creating **promotional assets** for events and outreach",
+          "Keeping **brand language** consistent across channels",
+        ],
+      },
+    ],
+  },
+  {
+    company: "Urban Parents Club",
+    location: "Bengaluru, Karnataka, India · Internship",
+    logo: "https://media.licdn.com/dms/image/v2/D560BAQFrs6ZrZcuEtw/company-logo_200_200/B56ZdFyyrYH8AM-/0/1749222632834/urban_parents_club_logo?e=2147483647&v=beta&t=veImUkw5oEbE1P0Ku4-pFfHZYFkVAvgXnhlvSlGoekc",
+    roles: [
+      {
+        title: "Founders Office Intern — Tech",
+        period: "05.2025 — 07.2025",
+        type: "Internship",
+        duration: "3m",
+        skills: ["React Native", "React.js", "Mobile Development"],
+        bullets: [
+          "Worked closely with **founders** on core technical products",
+          "Scaled the **mobile application** ecosystem",
+          "Shipped features across the **React Native** stack",
+        ],
+      },
+    ],
+  },
+  {
+    company: "Evoque Luxury",
+    location: "Remote · Freelance",
+    logo: DUMMY_LOGO,
+    roles: [
+      {
+        title: "Web Developer",
+        period: "Oct 2025 — Nov 2025",
+        type: "Freelance",
+        duration: "2m",
+        skills: [],
+        bullets: [],
+      },
+    ],
+  },
+  {
+    company: "E-Summit and Innovation Committee, NITK",
+    location: "Mangaluru · Hybrid · Part-time",
+    logo: DUMMY_LOGO,
+    roles: [
+      {
+        title: "Web Developer and Designer",
+        period: "05.2024 — Present",
+        type: "Part-time",
+        duration: "2y 4m",
+        skills: ["CSS", "Figma", "UI/UX Design", "Animation"],
+        bullets: [
+          "Designed and developed **interactive platforms** for the annual E-Summit",
+          "Built for a **hybrid event** experience, on-site and online",
+          "Crafted **animations** and engaging interfaces",
         ],
       },
     ],

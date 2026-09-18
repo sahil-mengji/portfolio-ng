@@ -13,13 +13,20 @@ const dotStyle = {
   backgroundRepeat: "repeat-y",
 }
 
-// **bold** inline renderer for bullets.
+// **keyword** inline renderer for bullets: marker-highlight pill.
 function Rich({ text }: { text: string }) {
   return (
     <Text.Body as="span" size="sm">
       {text.split(/(\*\*[^*]+\*\*)/).map((part, pi) =>
         part.startsWith("**") && part.endsWith("**") ? (
-          <strong key={pi} className="font-semibold">
+          <strong
+            key={pi}
+            className="rounded px-1 font-semibold"
+            style={{
+              background:
+                "color-mix(in srgb, var(--accent) 24%, transparent)",
+            }}
+          >
             {part.slice(2, -2)}
           </strong>
         ) : (
@@ -31,9 +38,10 @@ function Rich({ text }: { text: string }) {
 }
 
 function RoleBody({ r }: { r: Role }) {
+  const meta = [r.type, r.period, r.duration].filter(Boolean).join(" · ")
   return (
     <>
-      <Text.Caption className="opacity-60">{r.period}</Text.Caption>
+      {meta && <Text.Caption className="opacity-60">{meta}</Text.Caption>}
       <ul className="mt-2 list-inside list-disc space-y-1.5">
         {r.bullets.map((b) => (
           <li key={b} className="opacity-80">
@@ -53,19 +61,33 @@ function RoleBody({ r }: { r: Role }) {
 export function WorkCompany({ w }: { w: WorkExp }) {
   const [expanded, setExpanded] = useState(false)
   const [first, ...rest] = w.roles
-  const tenure = `${w.roles[0].period.split(" — ")[0]} — ${w.roles[w.roles.length - 1].period.split(" — ")[1] || "Present"}`
+  const firstStart = w.roles[w.roles.length - 1].period.split(" — ")[0]
+  const lastBits = w.roles[0].period.split(" — ")
+  const tenure =
+    lastBits.length > 1 ? `${firstStart} — ${lastBits[1] || "Present"}` : firstStart
   return (
     <CardContext.Provider value={true}>
-      {/* Company header: bordered container with padding, logo + text
-          vertically centered inside */}
+      {/* Company header: bordered frame around the logo only (border
+          offset from the artwork by padding), text vertically centered */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3 rounded-xl border border-black/10 p-3">
-          <img
-            src={w.logo}
-            alt={`${w.company} logo`}
-            className="block h-11 w-11 flex-shrink-0 rounded-md object-contain"
-            loading="lazy"
-          />
+        <div className="flex items-center gap-3">
+          <span
+            className="flex-shrink-0 p-1.5"
+            style={{
+              border: "1px solid color-mix(in srgb, var(--text, #111111) 22%, transparent)",
+              // Squircle where supported (Chromium), smooth large radius elsewhere.
+              borderRadius: 16,
+              cornerShape: "squircle",
+            } as React.CSSProperties}
+          >
+            <img
+              src={w.logo}
+              alt={`${w.company} logo`}
+              className="block h-8 w-8 bg-white object-contain"
+              style={{ borderRadius: 10, cornerShape: "squircle" } as React.CSSProperties}
+              loading="lazy"
+            />
+          </span>
           <div>
             <Text.Body className="font-medium leading-snug">{w.company}</Text.Body>
             <Text.Body size="sm" className="mt-0.5 opacity-70">
@@ -110,9 +132,9 @@ export function WorkCompany({ w }: { w: WorkExp }) {
         }`}
       >
         <div className="overflow-hidden">
-      {/* Connector: logo center (x=35) down into the rail (x=35) */}
-      <div aria-hidden className="ml-[34px] h-6 w-[2px]" style={dotStyle} />
-      <div className="relative ml-[19px]">
+      {/* Connector: logo center (x=20) down into the rail (x=20) */}
+      <div aria-hidden className="ml-[19px] h-6 w-[2px]" style={dotStyle} />
+      <div className="relative ml-[4px]">
             {w.roles.map((r, ri) => (
               <div
                 key={r.title}

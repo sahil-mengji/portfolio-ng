@@ -159,9 +159,14 @@ export function OrbitSpread() {
           if (ft >= 0.85 && was < 0.85 && now - flipCool.current[i] > 1800) {
             flipCool.current[i] = now
             crossed.push({ i, dir: 1 })
-          // Reverse: sound when the card lands back FLAT (≈0.05), not
-          // when it merely starts un-flipping — matches the forward rule.
-          } else if (ft < 0.05 && was >= 0.05 && was > 0 && now - flipCool.current[i] > 1800) {
+            // Reverse: sound when the card lands back FLAT (≈0.05), not
+            // when it merely starts un-flipping — matches the forward rule.
+          } else if (
+            ft < 0.05 &&
+            was >= 0.05 &&
+            was > 0 &&
+            now - flipCool.current[i] > 1800
+          ) {
             flipCool.current[i] = now
             crossed.push({ i, dir: -1 })
           }
@@ -311,6 +316,16 @@ export function OrbitSpread() {
   const swingC = swingCR.current
   const deckDx = swingC * SWING * effScale * (1 - e) * deckHa
   const deckRot = swingC * TILT * (1 - e) * deckHa
+  // Tagline word reveal (HeroSequence-style): each word rises + de-blurs
+  // on its own scroll window, all fading out together with the parallax.
+  const word = (i: number) => {
+    const t = smooth(clamp01((e - (0.2 + i * 0.09)) / 0.25))
+    return {
+      opacity: t * (1 - ppE),
+      transform: `translateY(${(1 - t) * 30}px)`,
+      filter: `blur(${(1 - t) * 10}px)`,
+    }
+  }
   const availW = boxRef.current?.clientWidth ?? 1200
 
   return (
@@ -390,7 +405,9 @@ export function OrbitSpread() {
               // Organic travel: each card leads/lags a touch mid-flight
               // (alternating, endpoints pinned), and the path bows outward
               // along a quadratic-style bulge — swoop, never straight lines.
-              const eP = clamp01(e + 0.04 * Math.sin(Math.PI * e) * (i % 2 ? 1 : -1))
+              const eP = clamp01(
+                e + 0.04 * Math.sin(Math.PI * e) * (i % 2 ? 1 : -1)
+              )
               const sw = Math.sin(Math.PI * eP)
               const vx = sdx - bdx
               const vy = sdy - bdy
@@ -476,18 +493,53 @@ export function OrbitSpread() {
                 </div>
               )
             })}
-            {/* Tagline beside the hero card — fades in on scatter.
-                Hero (-535..-15) + 70px gap + tagline (55..535):
-                group centered at 0. */}
+            {/* Tagline beside the hero card — HeroSequence ratios: small
+                pill badges top/bottom, big gradient italic words in two
+                overlapped rows, per-word scroll reveal (opacity + rise +
+                de-blur), all fading out with the parallax. */}
             <div
               aria-hidden
-              className="pointer-events-none absolute top-1/2 left-[calc(50%+55px)] w-[480px] -translate-y-1/2 font-heading text-[104px] leading-[1.08]  italic"
-              style={{ opacity: e * (1 - ppE), zIndex: 10 }}
+              className="pointer-events-none absolute top-1/2 left-[calc(50%+55px)] w-[640px] -translate-y-1/2 font-heading"
+              style={{ zIndex: 10 }}
             >
-              The <br />
-              Jack of
-              <br /> all trades <br />
-              <span className="mt-4 inline-block rounded-full border border-current px-8 text-[76px] leading-[1.4] whitespace-nowrap">
+              <span
+                className="mb-8 inline-flex items-center rounded-full border border-current bg-[color-mix(in_srgb,var(--surface)_88%,transparent)] px-7 py-2 text-[48px] font-medium backdrop-blur-md"
+                style={word(0)}
+              >
+                The
+              </span>
+              <div className="flex items-baseline">
+                <span
+                  className="py-2 pr-5 text-[170px] leading-[0.85] font-bold italic"
+                  style={word(1)}
+                >
+                  Jack
+                </span>
+                <span
+                  className="py-2 text-[170px] leading-[0.85] font-bold italic"
+                  style={word(2)}
+                >
+                  of
+                </span>
+              </div>
+              <div className="mt-4 flex items-baseline">
+                <span
+                  className="py-2 pr-5 text-[170px] leading-[0.85] font-bold italic"
+                  style={word(3)}
+                >
+                  all
+                </span>
+                <span
+                  className="py-2 text-[170px] leading-[0.85] font-bold italic"
+                  style={word(4)}
+                >
+                  trades
+                </span>
+              </div>
+              <span
+                className="mt-8 inline-flex items-center rounded-full border border-current bg-[color-mix(in_srgb,var(--surface)_88%,transparent)] px-7 py-2 text-[48px] font-medium lowercase backdrop-blur-md"
+                style={word(5)}
+              >
                 that your team needs!
               </span>
             </div>
