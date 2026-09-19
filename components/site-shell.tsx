@@ -39,9 +39,64 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener("click", onTap)
   }, [])
   const shown = peek || !fineHover || gauntActive
+  // Master switch for the drafting-grid backdrop — flip to true to bring
+  // the background pattern back (temporarily off).
+  const SHOW_GRID = false
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
-      <AdaptiveDraftingGridBackground cellSize={22} majorEvery={5} showArcs showAngles />
+      {SHOW_GRID && (
+        <AdaptiveDraftingGridBackground cellSize={22} majorEvery={5} showArcs showAngles />
+      )}
+      {/* Vertical boundary rules at the max-w-7xl container edges — fixed
+          so they run continuously behind everything (separators, orbit,
+          sections), defining the measure wall to wall. */}
+      {["left", "right"].map((side) => (
+        <div
+          key={side}
+          aria-hidden
+          style={{
+            position: "fixed",
+            top: 0,
+            bottom: 0,
+            width: 1,
+            zIndex: 0,
+            pointerEvents: "none",
+            background:
+              "color-mix(in srgb, var(--grid-ink,#767165) 16%, transparent)",
+            ...(side === "left"
+              ? { left: "max(0px, calc((100vw - 80rem) / 2))" }
+              : { right: "max(0px, calc((100vw - 80rem) / 2))" }),
+          }}
+        />
+      ))}
+      {/* Vertical hatch strips at the max-w-7xl edges — the horizontal
+          band pattern turned vertical, fixed full-height. Only render
+          when they fit outside the measure (≥86rem viewports). */}
+      {["left", "right"].map((side) => (
+        <div
+          key={`hatch-${side}`}
+          aria-hidden
+          className="hidden min-[86rem]:block"
+          style={{
+            position: "fixed",
+            top: 0,
+            bottom: 0,
+            width: "2rem",
+            zIndex: 0,
+            pointerEvents: "none",
+            background:
+              "repeating-linear-gradient(45deg, color-mix(in srgb, var(--grid-ink,#767165) 32%, transparent) 0, color-mix(in srgb, var(--grid-ink,#767165) 32%, transparent) 1px, transparent 0, transparent 50%)",
+            backgroundSize: "10px 10px",
+            borderLeft:
+              "1px solid color-mix(in srgb, var(--grid-ink,#767165) 16%, transparent)",
+            borderRight:
+              "1px solid color-mix(in srgb, var(--grid-ink,#767165) 16%, transparent)",
+            ...(side === "left"
+              ? { left: "calc((100vw - 80rem) / 2 - 2rem)" }
+              : { right: "calc((100vw - 80rem) / 2 - 2rem)" }),
+          }}
+        />
+      ))}
       <FloatingNavbar items={NAV_ITEMS} />
       <div
         onMouseEnter={() => {

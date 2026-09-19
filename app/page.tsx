@@ -11,7 +11,10 @@ import { P2BentoGrid } from "@/components/bento/P2BentoGrid"
 import { VerticalBannerTabs } from "@/components/vertical-banner-tabs"
 import { WorkCompany } from "@/components/work-timeline"
 import { OrbitSpread } from "@/components/orbit-spread"
+import { ProfileHeader } from "@/components/profile-header"
+import { SectionSeparator } from "@/components/section-separator"
 import { ScrollRuler } from "@/components/scroll-ruler"
+import { GitHubActivityWrapper } from "@/components/github-activity-wrapper"
 import { defaultPalette } from "@/lib/color-utils"
 
 function Card({
@@ -48,8 +51,56 @@ export default function Page() {
   const router = useRouter()
   return (
     <SiteShell>
-      {/* ORBIT — full-bleed (outside max-w-7xl) so the scroll-scatter can
-          use the whole viewport and never trims at a container edge */}
+      <div className="mx-auto max-w-7xl space-y-20">
+        {/* HERO */}
+        <section
+          data-ruler-section
+          data-ruler-label="Intro"
+          data-ruler-type="default"
+          data-ruler-preview="Designer — engineer systems for color"
+        >
+          {/* HERO — one continuous drafting sheet: band, identity, and
+              intro share edge rules with zero gaps between */}
+          {/* Full-bleed identity sheet. Top padding = exactly the
+              spiral's upward overhang minus the band height, so the
+              figure's top edge lands on the viewport top with no
+              over-margin — fully dynamic. */}
+          <div
+            className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 overflow-x-clip"
+            style={{
+              paddingTop:
+                "max(0px, calc(max(56px, calc(max(0px, (100vw - 80rem)/2) * 1.41)) * 0.382 - 32px))",
+            }}
+          >
+            <SectionSeparator className="border-x-0" />
+            <ProfileHeader />
+            <SectionSeparator className="border-x-0" />
+          </div>
+        </section>
+      </div>
+
+      {/* BENTO — full-bleed flush frame: viewport-wide bands + grid whose
+          tracks justify to the edges (zero side gutters, squares kept) */}
+      <div>
+        <SectionSeparator />
+        {/* BENTO GRID – edge-to-edge tracks */}
+        <div
+          data-ruler-section
+          data-ruler-label="Bento"
+          data-ruler-type="decision"
+          data-ruler-preview="Grid-driven portfolio cells"
+        >
+          <P2BentoGrid />
+        </div>
+        <SectionSeparator />
+      </div>
+
+      <div className="mx-auto max-w-7xl space-y-20">
+        {/* INDEX – tabbed highlights with banner art */}
+        <VerticalBannerTabs />
+      </div>
+
+      {/* ORBIT — full-bleed scatter, now below the Work/Education tabs */}
       <section
         data-ruler-section
         data-ruler-label="Orbit"
@@ -59,91 +110,25 @@ export default function Page() {
       >
         <OrbitSpread />
       </section>
+
+      {/* GITHUB ACTIVITY */}
+      <div className="mx-auto max-w-7xl">
+        <SectionSeparator />
+        <section
+          data-ruler-section
+          data-ruler-label="GitHub"
+          data-ruler-type="default"
+          data-ruler-preview="Contribution calendar"
+          className="space-y-4"
+        >
+          <GitHubActivityWrapper username="sahil-mengji" />
+        </section>
+        <SectionSeparator />
+      </div>
+
       <div className="mx-auto max-w-7xl space-y-20">
-        {/* HERO */}
-        <section
-          data-ruler-section
-          data-ruler-label="Intro"
-          data-ruler-type="default"
-          data-ruler-preview="Designer — engineer systems for color"
-          className="space-y-6 pt-8 md:pt-16"
-        >
-          <Text.Caption className="inline-flex rounded-full border px-3 py-1">
-            Available for new work · 2026
-          </Text.Caption>
-          <Text.Heading className="!text-5xl leading-[0.9] md:!text-7xl">
-            Designer — engineer
-            <br />
-            systems for{" "}
-            <span className="underline decoration-2 underline-offset-8">
-              color
-            </span>
-          </Text.Heading>
-          <Text.Subheading className="max-w-2xl !text-2xl md:!text-3xl">
-            I build editorial, grid-driven portfolios where one color drives
-            everything — background is primary, guidelines flip by luminosity.
-          </Text.Subheading>
-          <div className="flex gap-3 pt-2">
-            <TextureButton
-              variant="primary"
-              size="default"
-              onClick={() => router.push("/projects")}
-            >
-              View projects
-            </TextureButton>
-            <TextureButton
-              variant="secondary"
-              size="default"
-              onClick={() => router.push("/blogs")}
-            >
-              Read blogs
-            </TextureButton>
-            <TextureButton variant="minimal" size="default">
-              Get in touch
-            </TextureButton>
-          </div>
-        </section>
 
-        {/* STORY */}
-        <section
-          data-ruler-section
-          data-ruler-label="Story"
-          data-ruler-type="default"
-          data-ruler-preview="2019 → 2026 · editorial to systems"
-          className="grid gap-6 md:grid-cols-12 md:gap-8"
-        >
-          <div className="md:col-span-4">
-            <Text.Subheading as="h3">Story</Text.Subheading>
-            <Text.Caption className="mt-2 block">2019 → 2026</Text.Caption>
-          </div>
-          <div className="space-y-4 md:col-span-8">
-            <Text.Body>
-              Started in editorial, moved to systems. Obsessed with grids that
-              feel like drafting tables — fixed, bottom-left pinned, clipped.
-              Type set in Instrument Serif for subheads gives it a human
-              editorial voice against the technical grid.
-            </Text.Body>
-            <Text.Body className="opacity-80">
-              Single-picker theming wasn’t a gimmick: hue-tinted surfaces keep
-              the UI from collapsing to white/black, and guideline ink stays
-              legible by switching white ↔ dark shade per luminosity.
-            </Text.Body>
-          </div>
-        </section>
-
-        {/* BENTO GRID – centered, square base tracks */}
-        <div
-          data-ruler-section
-          data-ruler-label="Bento"
-          data-ruler-type="decision"
-          data-ruler-preview="Grid-driven portfolio cells"
-        >
-          <P2BentoGrid />
-        </div>
-
-        {/* INDEX – tabbed highlights with banner art */}
-        <VerticalBannerTabs />
-
+        <SectionSeparator />
         {/* WORK EXPERIENCE */}
         <section
           data-ruler-section
@@ -162,6 +147,7 @@ export default function Page() {
           </div>
         </section>
 
+        <SectionSeparator />
         {/* PROJECTS */}
         <section
           data-ruler-section
@@ -199,6 +185,7 @@ export default function Page() {
           </div>
         </section>
 
+        <SectionSeparator />
         {/* BLOGS */}
         <section
           data-ruler-section

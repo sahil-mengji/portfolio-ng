@@ -13,10 +13,17 @@ const dotStyle = {
   backgroundRepeat: "repeat-y",
 }
 
-// **keyword** inline renderer for bullets: marker-highlight pill.
-function Rich({ text }: { text: string }) {
+// **keyword** inline renderer: marker-highlight pill. Size passthrough
+// so other sections (e.g. profile bio) can reuse the same treatment.
+export function Rich({
+  text,
+  size = "sm",
+}: {
+  text: string
+  size?: "sm" | "default" | "lg"
+}) {
   return (
-    <Text.Body as="span" size="sm">
+    <Text.Body as="span" size={size}>
       {text.split(/(\*\*[^*]+\*\*)/).map((part, pi) =>
         part.startsWith("**") && part.endsWith("**") ? (
           <strong

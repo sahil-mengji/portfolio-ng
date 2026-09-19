@@ -149,7 +149,7 @@ body::-webkit-scrollbar {
   margin-inline: auto;
   display: grid;
   gap: 16px;
-  justify-content: center;
+  justify-content: space-between;
   justify-items: stretch;
   align-items: stretch;
   overflow: visible;

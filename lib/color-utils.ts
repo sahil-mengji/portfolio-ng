@@ -81,24 +81,106 @@ function getLuminance(hex: string): number {
   })
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs
 }
-export function getGridColors(baseColor: string): { bg: string; ink: string } {  const oklch = hexToOklch(baseColor)
-  const isLight = oklch.l > 0.68 || (oklch.c > 0.16 && oklch.l > 0.55) || getLuminance(baseColor) > 0.52
-  if (!isLight) return { bg: baseColor, ink: "#FFFFFF" }
-  const tL = Math.max(0.24, oklch.l - 0.42), tC = Math.max(0.02, oklch.c * 0.55)
-  let ink = oklchToHex(tL, tC, oklch.h)
-  if (Math.abs(hexToHsl(ink).l - hexToHsl(baseColor).l) < 38) ink = oklchToHex(Math.max(0.18, tL - 0.08), tC, oklch.h)
-  return { bg: baseColor, ink }
+export function getGridColors(baseColor: string): { bg: string; ink: string } {
+  // M3: guidelines use outlineVariant on the background — contrast-safe
+  // decoration by construction, no hand-rolled luminosity switching.
+  const p = generateColorPalette(baseColor)
+  return { bg: p.gridBg, ink: p.gridInk }
 }
 
-// Single automated token generator — OKLCH only
+// M3 dynamic-color engine — Material You theming with accessibility built
+// in (roles ship contrast guarantees instead of hand-tuned luminosity
+// thresholds). Source → HCT → DynamicScheme (SPEC_2025):
+// - chromatic sources → TONAL_SPOT (faithful hue family)
+// - near-achromatic sources → NEUTRAL (no random hue injection)
+// - source tone ≤ 30 → dark scheme (dark picker keeps a dark site)
+import {
+  DynamicScheme,
+  Variant,
+  SpecVersion,
+  Hct as McuHct,
+  argbFromHex as mcuArgb,
+  hexFromArgb as mcuHex,
+} from "@materialx/material-color-utilities"
+
+function m3Scheme(baseColor: string) {
+  let hct: { tone: number; chroma: number }
+  try {
+    hct = McuHct.fromInt(mcuArgb(baseColor))
+  } catch {
+    hct = McuHct.fromInt(mcuArgb("#6750A4"))
+  }
+  const scheme = DynamicScheme.from({
+    sourceColorHct: hct as any,
+    isDark: hct.tone <= 30,
+    variant: hct.chroma < 12 ? Variant.NEUTRAL : Variant.TONAL_SPOT,
+    specVersion: SpecVersion.SPEC_2025,
+  })
+  return { s: scheme, isDark: hct.tone <= 30 }
+}
+
+// Engine toggle: "m3" (M3 dynamic-color, contrast-safe) or "legacy"
+// (hand-rolled OKLCH). Single choke point — everything downstream
+// (providers, boxes, CSS vars) follows with zero individual changes.
+export type ThemeEngine = "m3" | "legacy"
+export const THEME_ENGINE: ThemeEngine = "legacy"
+
 export function generateColorPalette(baseColor: string) {
+  return THEME_ENGINE === "m3"
+    ? generateM3Palette(baseColor)
+    : generateLegacyPalette(baseColor)
+}
+
+// Single automated token generator — M3 roles only
+export function generateM3Palette(baseColor: string) {
+  const { s, isDark } = m3Scheme(baseColor)
+  const hx = (n: number) => mcuHex(n)
+  const fg = isDark ? "#FFFFFF" : "#000000"
+  const primary = hx(s.background)
+  const surface = hx(s.surfaceContainer)
+  const text = hx(s.onBackground)
+  const secondaryText = hx(s.onSurfaceVariant)
+  const cardText = hx(s.onSurface)
+  const cardSecondaryText = hx(s.onSurfaceVariant)
+  const brand = hx(s.primary)
+  const secondary = hx(s.secondary)
+
+  return {
+    primary, primaryForeground: fg,
+    secondary, secondaryForeground: hx(s.onSecondary),
+    brand, brandForeground: hx(s.onPrimary),
+    base: hx(s.surfaceContainerLow), baseForeground: text,
+    surface, surfaceForeground: hx(s.onSurface),
+    text, secondaryText,
+    cardText, cardSecondaryText, cardHeading: cardText,
+    gridBg: primary, gridInk: hx(s.outlineVariant),
+  }
+}
+
+// Legacy engine — hand-rolled OKLCH derivation (pre-M3 behavior: site bg
+// is the raw picked hex). Kept so THEME_ENGINE can switch back; grid
+// logic is inlined here (getGridColors dispatches through the toggle).
+export function generateLegacyPalette(baseColor: string) {
   const oklch = hexToOklch(baseColor)
   const isLight = oklch.l > 0.68 || (oklch.c > 0.15 && oklch.l > 0.52)
   const isAchromatic = oklch.c < 0.04
 
   const primary = baseColor
-  const { ink: gridInk, bg: gridBg } = getGridColors(baseColor)
-  const gridOklch = hexToOklch(gridInk)
+  const gIsLight =
+    oklch.l > 0.68 ||
+    (oklch.c > 0.16 && oklch.l > 0.55) ||
+    getLuminance(baseColor) > 0.52
+  let gridInk: string
+  if (!gIsLight) {
+    gridInk = "#FFFFFF"
+  } else {
+    const tL = Math.max(0.24, oklch.l - 0.42),
+      tC = Math.max(0.02, oklch.c * 0.55)
+    gridInk = oklchToHex(tL, tC, oklch.h)
+    if (Math.abs(hexToHsl(gridInk).l - hexToHsl(baseColor).l) < 38)
+      gridInk = oklchToHex(Math.max(0.18, tL - 0.08), tC, oklch.h)
+  }
+  const gridBg = baseColor
 
   // surface: high luminous → just slightly less luminous than primary, same hue/saturation; low → slightly lighter same hue/saturation
   let surface: string, base: string
@@ -139,7 +221,7 @@ export function generateColorPalette(baseColor: string) {
   }
 }
 
-export const DEFAULT_COLOR = "#F6F5F2"
+export const DEFAULT_COLOR = "#225dd3"
 
 // Default (system) palette, computed once — used as CSS var() fallbacks so
 // var-consuming components render the correct default look with zero

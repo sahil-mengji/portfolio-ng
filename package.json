@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
+    "@materialx/material-color-utilities": "^0.4.8",
     "@remixicon/react": "^4.9.0",
     "@uiw/react-color": "^2.10.3",
     "axios": "^1.20.0",
