@@ -1,0 +1,94 @@
+"use client"
+
+import { motion, useMotionValue, useSpring } from "motion/react"
+
+const VIEWBOX_WIDTH = 63
+const DEFAULT_GRADIENT_X = 31.5
+
+export function SiteFooterInteractiveLogotype() {
+  const gradientX1Raw = useMotionValue(DEFAULT_GRADIENT_X)
+  const gradientX1 = useSpring(gradientX1Raw, {
+    stiffness: 200,
+    damping: 30,
+    mass: 0.5,
+  })
+
+  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    const container = event.currentTarget
+    const containerRect = container.getBoundingClientRect()
+    const mouseX = event.clientX - containerRect.left
+    const containerWidth = containerRect.width
+
+    const normalizedX = (mouseX / containerWidth) * VIEWBOX_WIDTH
+    const clampedX = Math.max(0, Math.min(VIEWBOX_WIDTH, normalizedX))
+
+    gradientX1Raw.set(clampedX)
+  }
+
+  const handleMouseLeave = () => {
+    gradientX1Raw.set(DEFAULT_GRADIENT_X)
+  }
+
+  return (
+    <div className="screen-line-bottom after:z-1 after:bg-foreground/10">
+      <div
+        className="overflow-hidden"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
+        <div className="flex w-full translate-y-[37.5%] items-center justify-center">
+          <svg
+            className="container size-full"
+            viewBox="0 0 63 14"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <g fill="url(#paint0_linear_footer)">
+              <path d="M1.07907 10.9255V9.39637H0V7.68035H1.19765V9.22646H4.30442V6.30413H1.07907V4.77501H0V1.54685H1.07907V0.000734031H4.423V1.54685H5.51392V3.24588H4.30442V1.71675H1.19765V4.62209H4.423V6.13423H5.51392V9.39637H4.423V10.9255H1.07907Z" />
+              <path d="M7.66808 10.9255V9.39637H6.58901V4.62209H7.66808V3.07598H11.012V4.62209H12.1029V9.22646H13.182L13.4023 10.9248L11.9844 10.9255V9.39637H11.012V10.9255H7.66808ZM7.78666 9.22646H10.8934V4.77501H7.78666V9.22646Z" />
+              <path d="M13.4023 10.9248V0H14.6V4.62136H15.5486V3.07524H17.8253V4.62136H18.9163V10.9248H17.7068V4.77427H15.6672V6.3034H14.6V10.9248H13.4023Z" />
+              <path d="M20.3503 10.9248V3.07524H21.548V10.9248H20.3503ZM20.3503 1.71602V0H21.548V1.71602H20.3503Z" />
+              <path d="M22.979 10.9248V0H24.1766V10.9248H22.979Z" />
+              <path d="M25.6076 10.9248V1.54612H26.6867V0H27.8725V1.54612H28.9634V4.62136H29.9121V1.54612H31.003V0H32.2006V1.54612H33.2678V10.9248H32.0821V1.71602H31.1216V4.77427H30.0306V9.39563H28.8449V4.77427H27.7539V1.71602H26.8053V10.9248H25.6076Z" />
+              <path d="M35.777 10.9248V9.39563H34.6979V4.62136H35.777V3.07524H39.1209V4.62136H40.2119V6.3034H39.0023V4.77427H35.8956V6.1335H38.0537V7.84951H35.8956V9.22573H39.0023V7.66262H40.2119V9.37864H39.1209V10.9248H35.777Z" />
+              <path d="M41.6459 10.9248V3.07524H46.0689V4.62136H47.1598V10.9248H45.9503V4.77427H42.8436V10.9248H41.6459Z" />
+              <path d="M49.4414 14V12.4709H48.3623V10.7718H49.56V12.301H52.6786V9.39563H49.4414V7.84951H48.3623V4.62136H49.4414V3.07524H52.7972V4.62136H53.8762V12.4709H52.7972V14H49.4414ZM49.56 7.67961H52.6786V4.77427H49.56V7.67961Z" />
+              <path d="M56.1578 10.9417V9.39563H55.0787V7.67961H56.2763V9.22573H58.3159V3.07524H59.5135V9.39563H58.4345V10.9417H56.1578Z" />
+              <path d="M60.9497 10.9248V3.07524H62.1474V10.9248H60.9497ZM60.9497 1.71602V0H62.1474V1.71602H60.9497Z" />
+            </g>
+            <g stroke="var(--line)" strokeWidth="0.1">
+              <path d="M1.07907 10.9255V9.39637H0V7.68035H1.19765V9.22646H4.30442V6.30413H1.07907V4.77501H0V1.54685H1.07907V0.000734031H4.423V1.54685H5.51392V3.24588H4.30442V1.71675H1.19765V4.62209H4.423V6.13423H5.51392V9.39637H4.423V10.9255H1.07907Z" />
+              <path d="M7.66808 10.9255V9.39637H6.58901V4.62209H7.66808V3.07598H11.012V4.62209H12.1029V9.22646H13.182L13.4023 10.9248L11.9844 10.9255V9.39637H11.012V10.9255H7.66808ZM7.78666 9.22646H10.8934V4.77501H7.78666V9.22646Z" />
+              <path d="M13.4023 10.9248V0H14.6V4.62136H15.5486V3.07524H17.8253V4.62136H18.9163V10.9248H17.7068V4.77427H15.6672V6.3034H14.6V10.9248H13.4023Z" />
+              <path d="M20.3503 10.9248V3.07524H21.548V10.9248H20.3503ZM20.3503 1.71602V0H21.548V1.71602H20.3503Z" />
+              <path d="M22.979 10.9248V0H24.1766V10.9248H22.979Z" />
+              <path d="M25.6076 10.9248V1.54612H26.6867V0H27.8725V1.54612H28.9634V4.62136H29.9121V1.54612H31.003V0H32.2006V1.54612H33.2678V10.9248H32.0821V1.71602H31.1216V4.77427H30.0306V9.39563H28.8449V4.77427H27.7539V1.71602H26.8053V10.9248H25.6076Z" />
+              <path d="M35.777 10.9248V9.39563H34.6979V4.62136H35.777V3.07524H39.1209V4.62136H40.2119V6.3034H39.0023V4.77427H35.8956V6.1335H38.0537V7.84951H35.8956V9.22573H39.0023V7.66262H40.2119V9.37864H39.1209V10.9248H35.777Z" />
+              <path d="M41.6459 10.9248V3.07524H46.0689V4.62136H47.1598V10.9248H45.9503V4.77427H42.8436V10.9248H41.6459Z" />
+              <path d="M49.4414 14V12.4709H48.3623V10.7718H49.56V12.301H52.6786V9.39563H49.4414V7.84951H48.3623V4.62136H49.4414V3.07524H52.7972V4.62136H53.8762V12.4709H52.7972V14H49.4414ZM49.56 7.67961H52.6786V4.77427H49.56V7.67961Z" />
+              <path d="M56.1578 10.9417V9.39563H55.0787V7.67961H56.2763V9.22573H58.3159V3.07524H59.5135V9.39563H58.4345V10.9417H56.1578Z" />
+              <path d="M60.9497 10.9248V3.07524H62.1474V10.9248H60.9497ZM60.9497 1.71602V0H62.1474V1.71602H60.9497Z" />
+            </g>
+            <defs>
+              <motion.linearGradient
+                id="paint0_linear_footer"
+                x1={gradientX1}
+                y1="0"
+                x2="31.5"
+                y2="14"
+                gradientUnits="userSpaceOnUse"
+              >
+                <stop
+                  offset="0.625"
+                  stopColor="var(--foreground)"
+                  stopOpacity="0"
+                />
+                <stop offset="1" stopColor="var(--foreground)" />
+              </motion.linearGradient>
+            </defs>
+          </svg>
+        </div>
+      </div>
+    </div>
+  )
+}

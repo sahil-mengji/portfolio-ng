@@ -115,18 +115,24 @@ function GoldenGuides({ className }: { className?: string }) {
         strokeWidth={1}
         vectorEffect="non-scaling-stroke"
       >
-        <path d={GOLDEN_SPIRAL} strokeWidth={1.5} />
-        {GOLDEN_JOINTS.map(([cx, cy], i) => (
-          <rect
-            key={i}
-            x={cx - 3.5}
-            y={cy - 3.5}
-            width={7}
-            height={7}
-            fill="currentColor"
-            stroke="none"
-          />
-        ))}
+        {/* arcs melt into the bg via the guideline tone; anchors pop
+            in high-contrast foreground ink — no plates or outlines */}
+        <g opacity={0.55} stroke="var(--grid-ink, #767165)">
+          <path d={GOLDEN_SPIRAL} strokeWidth={1.25} />
+        </g>
+        <g opacity={1}>
+          {GOLDEN_JOINTS.map(([cx, cy], i) => (
+            <rect
+              key={i}
+              x={cx - 3}
+              y={cy - 3}
+              width={6}
+              height={6}
+              fill="var(--foreground, currentColor)"
+              stroke="none"
+            />
+          ))}
+        </g>
       </g>
     </svg>
   )
@@ -155,7 +161,7 @@ export function ProfileHeader() {
           pinned tail-tip anchor (288,165). Inner svg spins about its
           own center; wrapper translates pin the rotated tip exactly. */}
       <div className="pointer-events-none absolute top-0 left-[max(0px,calc((100vw_-_80rem)/2))] z-0 h-[var(--figH)] -translate-x-[62.9%] -translate-y-[7.3%]">
-        <GoldenGuides className="h-full w-auto -rotate-90 opacity-10" />
+        <GoldenGuides className="h-full w-auto -rotate-90 overflow-visible opacity-75" />
       </div>
       {/* Full-width border lines through every anchor height. The seven
           joints collapse to five distinct rotated heights (fractions of
@@ -178,7 +184,7 @@ export function ProfileHeader() {
           sheet — avatar bottom lands on the sheet bottom (= the
           bottom-most anchor height). */}
       <div
-        className={cn("mx-auto flex max-w-7xl flex-col border-x", LINE)}
+        className={cn("relative mx-auto flex max-w-7xl flex-col border-x", LINE)}
         style={{ minHeight: "inherit" }}
       >
         {/* Availability strip: very top, ruled top and bottom */}
@@ -215,7 +221,7 @@ export function ProfileHeader() {
 
             <div className={cn("flex flex-1 flex-col border-t", LINE)}>
               <div className="relative flex items-stretch gap-2 pl-4">
-                <h1 className="relative z-10 -translate-y-px font-heading text-5xl font-semibold tracking-tight md:text-7xl">
+                <h1 className="relative z-10 -translate-y-px font-heading text-5xl font-semibold tracking-tight md:text-7xl lg:text-8xl">
                   Sahil Mengji
                 </h1>
                 {/* <BadgeCheck
@@ -227,7 +233,7 @@ export function ProfileHeader() {
                 <PronounceMyName />
                 <div
                   aria-hidden
-                  className="ml-2 flex-1 self-stretch border-l"
+                  className={cn("ml-2 flex-1 self-stretch border-l", LINE)}
                   style={{
                     backgroundImage: HATCH_BG,
                     backgroundSize: "10px 10px",
@@ -239,7 +245,7 @@ export function ProfileHeader() {
                 className={cn("flex items-stretch gap-3 border-t pl-4", LINE)}
               >
                 <TextFlip
-                  className="shrink-0 font-mono text-lg text-balance text-foreground opacity-55"
+                  className="shrink-0 font-mono text-xl text-balance text-foreground opacity-55"
                   interval={1.5}
                 >
                   {FLIP_SENTENCES}
@@ -269,7 +275,7 @@ export function ProfileHeader() {
               >
                 <div
                   aria-hidden
-                  className="row-span-2 flex-1 border-t border-r"
+                  className={cn("row-span-2 flex-1 border-t border-r", LINE)}
                   style={{
                     backgroundImage: HATCH_BG,
                     backgroundSize: "10px 10px",
@@ -283,48 +289,54 @@ export function ProfileHeader() {
                       LINE
                     )}
                   >
-                    <p className="max-w-xl font-mono text-base text-balance text-foreground opacity-80">
+                    <p className="max-w-2xl font-mono text-xl text-balance text-foreground opacity-80">
                       <Rich
-                        size="default"
+                        size="lg"
+                        className="text-xl"
                         text="Designer–engineer building **editorial, grid-driven portfolios** where **one color** drives everything."
                       />
                     </p>
-                    <p className="max-w-xl font-mono text-base text-balance text-foreground opacity-80">
+                    <p className="max-w-2xl font-mono text-xl text-balance text-foreground opacity-80">
                       <Rich
-                        size="default"
+                        size="lg"
+                        className="text-xl"
                         text="I care about **grids with intent**, **type with a voice**, and interfaces that feel **drafted, not decorated**."
                       />
                     </p>
                   </div>
                   <div
                     className={cn(
-                      "flex flex-wrap gap-3 self-end border-r border-l pl-4",
+                      "flex flex-wrap items-stretch gap-3 self-end border-r border-l pl-4",
                       LINE
                     )}
                   >
-                    <TextureButton
-                      variant="primary"
-                      size="default"
-                      className="w-auto"
-                      onClick={() => router.push("/projects")}
-                    >
-                      View projects
-                    </TextureButton>
-                    <TextureButton
-                      variant="secondary"
-                      size="default"
-                      className="w-auto"
-                      onClick={() => router.push("/blogs")}
-                    >
-                      Read blogs
-                    </TextureButton>
+                    <div className="flex flex-wrap items-center gap-3 py-2">
+                      <TextureButton
+                        variant="primary"
+                        size="default"
+                        className="w-auto"
+                        onClick={() => router.push("/projects")}
+                      >
+                        View projects
+                      </TextureButton>
+                      <TextureButton
+                        variant="secondary"
+                        size="default"
+                        className="w-auto"
+                        onClick={() => router.push("/blogs")}
+                      >
+                        Read blogs
+                      </TextureButton>
+                    </div>
 
                     <div
                       aria-hidden
-                      className={cn("flex-1 border-x border-b border-l", LINE)}
+                      className={cn(
+                        "min-h-9 min-w-12 flex-1 self-stretch border-x border-b",
+                        LINE
+                      )}
                       style={{
                         backgroundImage: HATCH_BG,
-                        height: "100%",
                         backgroundSize: "10px 10px",
                       }}
                     />
@@ -333,26 +345,32 @@ export function ProfileHeader() {
               </div>
             </div>
           </div>
-          {/* Avatar: right side — guaranteed square, scaling with
-              viewport height past any max. Fills its cell exactly. */}
+          {/* Avatar spacer: reserves the text-clearance column in flow
+              (hidden on small screens); the visible image is pinned
+              absolute to the max-width section, see below. */}
           <div
+            aria-hidden
             className={cn(
-              "flex shrink-0 items-end justify-center self-stretch border-l",
+              "flex shrink-0 items-stretch justify-center self-stretch border-l max-md:hidden",
               LINE
             )}
           >
-            <div className="box-border aspect-square w-[calc(var(--figH)*0.9)] p-2">
-              <Image
-                className="h-full w-full rounded-full object-cover ring-1 ring-border ring-offset-2 ring-offset-background select-none"
-                alt="Sahil Mengji"
-                src="/profile.jpg"
-                width={600}
-                height={600}
-                priority
-                unoptimized
-              />
-            </div>
+            <div className="box-border aspect-square h-full" />
           </div>
+        </div>
+        {/* Avatar image: pinned absolute to the max-width section —
+            bottom/right flush to its edges, top clears the smallest
+            golden arc (21 of the 233-unit height). */}
+        <div className="absolute right-0 bottom-0 top-[calc(var(--figH)*21/233)] z-10 aspect-square w-auto overflow-visible max-md:top-auto max-md:right-4 max-md:bottom-4 max-md:h-28 max-md:w-28">
+          <Image
+            className="h-full w-full rounded-full object-cover ring-1 ring-border ring-offset-0 ring-offset-background select-none"
+            alt="Sahil Mengji"
+            src="/profile.jpg"
+            width={600}
+            height={600}
+            priority
+            unoptimized
+          />
         </div>
       </div>
     </div>

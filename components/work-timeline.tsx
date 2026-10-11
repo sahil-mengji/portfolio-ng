@@ -18,12 +18,14 @@ const dotStyle = {
 export function Rich({
   text,
   size = "sm",
+  className,
 }: {
   text: string
   size?: "sm" | "default" | "lg"
+  className?: string
 }) {
   return (
-    <Text.Body as="span" size={size}>
+    <Text.Body as="span" size={size} className={className}>
       {text.split(/(\*\*[^*]+\*\*)/).map((part, pi) =>
         part.startsWith("**") && part.endsWith("**") ? (
           <strong

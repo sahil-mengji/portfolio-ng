@@ -1,5 +1,5 @@
 "use client"
-import React, { useCallback, useEffect, useRef, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 const defaultColors = {
   drawLine: "rgba(160, 160, 200, 0.7)",
@@ -51,6 +51,9 @@ const textToPattern = (text: string, rows: number, columns: number, font: Record
   ]
 
   const extendedPattern = paddedPattern.map((row) => {
+    // Blank text yields empty rows — doubling [] never reaches the target
+    // width (infinite loop, frozen tab). Fill with off-lights instead.
+    if (row.length === 0) return Array(columns * 2).fill("0")
     let newRow = [...row]
     while (newRow.length < columns * 2) {
       newRow = [...newRow, ...newRow]
@@ -85,10 +88,14 @@ export function LightBoard({
   disableDrawing = true,
   controlledHoverState,
   onHoverStateChange,
+  /** false = static board (no marquee scroll) for flip-style text updates */
+  marquee = true,
 }: any) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [columns, setColumns] = useState(0)
-  const mergedColors = { ...defaultColors, ...colors }
+  // Memoized: a fresh object every render would churn drawToCanvas's
+  // identity and resubscribe the RAF loop constantly.
+  const mergedColors = useMemo(() => ({ ...defaultColors, ...colors }), [colors])
   const selectedFont = font === "default" ? defaultFont : sevenSegmentFont
   const [isDrawing, setIsDrawing] = useState(false)
   const [internalHoverState, setInternalHoverState] = useState(false)
@@ -144,33 +151,18 @@ export function LightBoard({
     })
   }, [basePattern, offset, columns, lightSize, gap, mergedColors])
 
-  useEffect(() => {
-    let animationFrameId: number
-    const animate = () => {
-      if (!isHovered && basePattern[0]) {
-        setOffset((prevOffset) => (prevOffset + 1) % basePattern[0].length)
-      }
-      drawToCanvas()
-      animationFrameId = requestAnimationFrame(animate)
-    }
-    animationFrameId = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(animationFrameId)
-  }, [basePattern, isHovered, drawToCanvas])
-
-  useEffect(() => {
-    if (columns > 0) {
-      setBasePattern(textToPattern(normalizeText(text), rows, columns, selectedFont))
-    }
-  }, [text, rows, columns, selectedFont])
-
+  // Marquee clock: advances the scroll offset at `updateInterval` pace.
+  // (Previously a second ungated RAF loop also advanced it every frame —
+  // 60 setStates/sec per board — which saturated the main thread and
+  // froze the page once the banner grew to 4 boards.)
   const animate = useCallback(() => {
     const currentTime = Date.now()
-    if (currentTime - lastUpdateTime >= updateInterval && !isHovered && basePattern[0]) {
-      setOffset((prevOffset) => (prevOffset + 1) % basePattern[0].length)
+    if (marquee && currentTime - lastUpdateTime >= updateInterval && !isHovered && basePattern[0]) {
+      const len = basePattern[0].length || 1
+      setOffset((prevOffset) => (Number.isNaN(prevOffset) ? 0 : (prevOffset + 1) % len))
       setLastUpdateTime(currentTime)
     }
-    drawToCanvas()
-  }, [updateInterval, isHovered, basePattern, drawToCanvas, lastUpdateTime])
+  }, [marquee, updateInterval, isHovered, basePattern, lastUpdateTime])
 
   useEffect(() => {
     let animationFrameId: number
@@ -181,6 +173,18 @@ export function LightBoard({
     animationFrameId = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(animationFrameId)
   }, [animate])
+
+  // Paint only when the output actually changes (offset / text / size) —
+  // never on every animation frame.
+  useEffect(() => {
+    drawToCanvas()
+  }, [drawToCanvas])
+
+  useEffect(() => {
+    if (columns > 0) {
+      setBasePattern(textToPattern(normalizeText(text), rows, columns, selectedFont))
+    }
+  }, [text, rows, columns, selectedFont])
 
   const drawLine = useCallback((startX: number, startY: number, endX: number, endY: number) => {
     const canvas = canvasRef.current

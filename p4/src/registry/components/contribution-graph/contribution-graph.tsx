@@ -383,8 +383,9 @@ export const ContributionGraphCalendar = ({
       {...props}
     >
       <svg
-        className="block overflow-visible"
+        className="mx-auto block h-auto w-full overflow-visible"
         height={height}
+        style={{ maxWidth: width }}
         viewBox={`0 0 ${width} ${height}`}
         width={width}
       >
@@ -428,7 +429,7 @@ export const ContributionGraphFooter = ({
 }: ContributionGraphFooterProps) => (
   <div
     className={cn(
-      "flex flex-wrap gap-1 whitespace-nowrap sm:gap-x-4",
+      "flex w-full max-w-full flex-wrap items-center gap-1 sm:gap-x-4",
       className
     )}
     {...props}

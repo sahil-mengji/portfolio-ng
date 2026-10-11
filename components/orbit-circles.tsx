@@ -30,6 +30,7 @@ function HaloRing({
   stroke,
   width = 7,
   opacity = 1,
+  isArc = false,
 }: {
   x: number
   y: number
@@ -37,7 +38,9 @@ function HaloRing({
   stroke: string
   width?: number
   opacity?: number
+  isArc?: boolean
 }) {
+  const arcOpacity = isArc ? opacity * 0.35 : opacity
   return (
     <g>
       <circle
@@ -47,7 +50,7 @@ function HaloRing({
         fill="none"
         stroke="#FFFFFF"
         strokeWidth={width + 3.5}
-        opacity={0.9}
+        opacity={isArc ? 0.28 : 0.9}
       />
       <circle
         cx={x}
@@ -56,7 +59,7 @@ function HaloRing({
         fill="none"
         style={{ stroke }}
         strokeWidth={width}
-        opacity={opacity}
+        opacity={arcOpacity}
       />
     </g>
   )
@@ -72,6 +75,8 @@ const DOTS = Array.from({ length: 6 }, (_, i) => {
     x: r3(CX + RING_R * Math.cos(a)),
     y: r3(CY + RING_R * Math.sin(a)),
     stroke: detailStroke(hueVar, fallback, 55),
+    // Anchor: solid theme hue, no white wash — deliberately distinct from the arc
+    anchor: `var(${hueVar}, ${fallback})`,
   }
 })
 
@@ -96,12 +101,12 @@ export const OrbitCircles = memo(function OrbitCircles() {
   return (
     <div className="flex w-full justify-center" aria-hidden>
       <svg
-        viewBox="0 0 400 400"
-        className="h-auto w-full max-w-[420px]"
+        viewBox="-22 -22 444 444"
+        className="h-auto w-full max-w-[420px] overflow-visible"
         role="presentation"
       >
         {/* opaque disc behind the figure — grid shows around it, not through it */}
-        <circle cx={CX} cy={CY} r={195} fill="var(--card)" />
+        <circle cx={CX} cy={CY} r={195} fill="var(--card)" opacity={0.95} />
         {/* construction ring through the centers (dash drifts opposite the orbit) */}
         <circle
           cx={CX}
@@ -110,19 +115,19 @@ export const OrbitCircles = memo(function OrbitCircles() {
           fill="none"
           className="orbit-dash-drift"
           style={{ stroke: detailStroke("--accent", defaultPalette.brand, 55) }}
-          strokeOpacity={0.35}
+          strokeOpacity={0.5}
           strokeWidth={1.5}
           strokeDasharray="3 7"
         />
-        {/* same-size circle fixed at the center of the figure */}
-        <HaloRing x={CX} y={CY} r={DOT_R} stroke={detailStroke("--accent", defaultPalette.brand, 55)} />
+        {/* same-size circle fixed at the center of the figure — kept dim so anchors read brightest */}
+        <HaloRing x={CX} y={CY} r={DOT_R} stroke={detailStroke("--accent", defaultPalette.brand, 55)} opacity={0.6} />
         {/* smaller concentric inside the center circle — same motif as the orbiters */}
         <HaloRing
           x={CX}
           y={CY}
           r={DOT_R / 2}
           stroke={detailStroke("--accent", defaultPalette.brand, 55)}
-          opacity={0.55}
+          opacity={0.4}
         />
         {/* big enclosing circle: outermost ring edge sits at 90 + 90 + 3.5,
             so r=195 leaves a padding gap around the whole figure */}
@@ -133,37 +138,47 @@ export const OrbitCircles = memo(function OrbitCircles() {
           fill="none"
           style={{ stroke: detailStroke("--secondary-soft", defaultPalette.secondary, 60) }}
           strokeWidth={7}
+          opacity={0.8}
         />
         {/* rotating group — dots stay 60° apart at every instant (CSS orbit) */}
         <g className="orbit-rotate">
           {DOTS.map((d, i) => (
             <g key={i}>
-              <HaloRing x={d.x} y={d.y} r={DOT_R} stroke={d.stroke} />
+              <HaloRing x={d.x} y={d.y} r={DOT_R} stroke={d.stroke} width={5.5} isArc={true} />
               {/* smaller concentric circle, co-centered — same thickness as parent */}
               <HaloRing
                 x={d.x}
                 y={d.y}
                 r={DOT_R / 2}
                 stroke={d.stroke}
-                opacity={0.55}
-              />
-              {/* vertex node: filled dot + hairline ring, staggered pulse */}
-              <circle
-                cx={d.x}
-                cy={d.y}
-                r={10}
-                fill="none"
-                style={{ stroke: DETAIL }}
-                strokeWidth={1}
+                width={5.5}
                 opacity={0.7}
+                isArc={true}
+              />
+              {/* vertex node (anchor): solid hue + full opacity, brighter than the arc */}
+              <circle
+                cx={d.x}
+                cy={d.y}
+                r={12}
+                fill="var(--card)"
+                opacity={1}
               />
               <circle
                 cx={d.x}
                 cy={d.y}
-                r={4}
-                fill={DETAIL}
-                className="orbit-pulse-dot"
-                style={{ animationDelay: `${(i * 0.67).toFixed(2)}s` }}
+                r={12}
+                fill="none"
+                style={{ stroke: d.anchor }}
+                strokeWidth={3}
+                opacity={1}
+              />
+              <circle
+                cx={d.x}
+                cy={d.y}
+                r={6.5}
+                style={{ fill: d.anchor, animationDelay: `${(i * 0.67).toFixed(2)}s` }}
+                className="orbit-anchor-dot"
+                opacity={1}
               />
             </g>
           ))}
@@ -184,9 +199,9 @@ export const OrbitCircles = memo(function OrbitCircles() {
           ))}
         </g>
         {/* center medallion: halo base + spinning detail diamond */}
-        <HaloRing x={CX} y={CY} r={16} stroke={detailStroke("--accent", defaultPalette.brand, 55)} />
+        <HaloRing x={CX} y={CY} r={16} stroke={detailStroke("--accent", defaultPalette.brand, 55)} opacity={0.9} />
         <g className="orbit-medallion">
-          <polygon points="200,192 208,200 200,208 192,200" fill={DETAIL} />
+          <polygon points="200,192 208,200 200,208 192,200" fill={DETAIL} opacity={0.95} />
         </g>
       </svg>
     </div>

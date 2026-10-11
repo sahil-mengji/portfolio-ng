@@ -1,60 +1,138 @@
-"use client";
+"use client"
 
-import * as React from "react";
-import { createPortal } from "react-dom";
+import * as React from "react"
+import { createPortal } from "react-dom"
 import {
   AnimatePresence,
   motion,
   useReducedMotion,
   type Transition,
-} from "motion/react";
-import { cn } from "@/lib/utils";
+} from "motion/react"
+import { cn } from "@/lib/utils"
+import { RiGithubFill } from "@remixicon/react"
+import { useThemeColorContext } from "@/components/theme-provider"
 
-export type ContributionLevel = 0 | 1 | 2 | 3 | 4;
+export type ContributionLevel = 0 | 1 | 2 | 3 | 4
+
+// Null = default hardcoded look (byte-identical). Non-null only while the
+// site picker overrides the palette — every element repaints through these
+// tokens, zero layout or structural change.
+type GithubTheme = {
+  scale: string[]
+  track: string
+  statBg: string
+  statText: string
+  statValue: string
+  tooltipBg: string
+  tooltipFg: string
+  monthText: string
+  avatarBg: string
+  avatarFg: string
+  avatarRing: string
+  rowHoverVar: string
+  repoName: string
+  repoCount: string
+  chevron: string
+  cardBg: string
+  panelBorder: string
+  panelBg: string
+  toggleBg: string
+  emptyText: string
+}
+
+function useGithubColors(): GithubTheme | null {
+  const { palette, isOverridden } = useThemeColorContext()
+  return React.useMemo(() => {
+    if (!isOverridden) return null
+    const accent: string = palette.brand ?? "#4f46e5"
+    const text: string = palette.text ?? "#171717"
+    const surface: string = palette.surface ?? "#ffffff"
+    const mix = (pct: number) =>
+      `color-mix(in srgb, ${accent} ${pct}%, ${surface})`
+    const tmix = (pct: number) =>
+      `color-mix(in srgb, ${text} ${pct}%, transparent)`
+    return {
+      scale: ["transparent", mix(38), mix(58), mix(80), accent],
+      track: tmix(8),
+      statBg: tmix(6),
+      statText: tmix(72),
+      statValue: text,
+      tooltipBg: text,
+      tooltipFg: surface,
+      monthText: tmix(72),
+      avatarBg: tmix(14),
+      avatarFg: tmix(72),
+      avatarRing: surface,
+      rowHoverVar: tmix(5),
+      repoName: text,
+      repoCount: tmix(72),
+      chevron: tmix(60),
+      cardBg: surface,
+      panelBorder: tmix(16),
+      panelBg: `color-mix(in srgb, ${surface} 92%, transparent)`,
+      toggleBg: tmix(8),
+      emptyText: tmix(72),
+    }
+  }, [palette, isOverridden])
+}
 
 export type Contribution = {
-  date: string;
-  count: number;
-  level: ContributionLevel;
-};
+  date: string
+  count: number
+  level: ContributionLevel
+}
 
 export type RepoContribution = {
-  name: string;
-  count: number;
-  logo?: React.ReactNode;
-  href?: string;
-};
+  name: string
+  count: number
+  logo?: React.ReactNode
+  href?: string
+}
 
-const DEFAULT_ACCENT = "#39d353";
-const DEFAULT_CELL_SIZE = 11;
-const DEFAULT_LABEL = "Top contributions in:";
-const DEFAULT_MONTHS = 12;
-const WEEKS_PER_MONTH = 365.25 / 12 / 7;
-const STACK_LIMIT = 3;
-const MIN_CARD_WIDTH = 320;
-const MIN_LABEL_WEEKS = 3;
-const CARD_PADDING = 32;
+export type ContributionStats = {
+  commits?: number
+  issues?: number
+  pullRequests?: number
+  reviews?: number
+}
 
-const gapFor = (cellSize: number) => Math.max(2, Math.round(cellSize / 4));
+const DEFAULT_ACCENT = [
+  "transparent",
+  "#9be9a8",
+  "#40c463",
+  "#30a14e",
+  "#216e39",
+]
+const DEFAULT_CELL_SIZE = 11
+const DEFAULT_LABEL = "Top contributions in:"
+const DEFAULT_MONTHS = 12
+const WEEKS_PER_MONTH = 365.25 / 12 / 7
+const STACK_LIMIT = 3
+const MIN_CARD_WIDTH = 320
+const CARD_PADDING = 32
+
+export const gapFor = (cellSize: number) =>
+  Math.max(2, Math.round(cellSize / 4))
+const monthGapFor = (cellSize: number) => gapFor(cellSize) * 3
 const weeksFor = (months: number) =>
-  Math.max(1, Math.ceil(months * WEEKS_PER_MONTH));
+  Math.max(1, Math.ceil(months * WEEKS_PER_MONTH))
 
 const useIsoLayoutEffect =
-  typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
+  typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect
 
-const EASE_OUT = [0.22, 1, 0.36, 1] as const;
-const SPRING = { type: "spring", bounce: 0.2, duration: 0.62 } as const;
-const HEADER_SPRING = { ...SPRING, bounce: 0.45 } as const;
-const ROW_SPRING = { ...SPRING, bounce: 0.26, delay: 0.08 } as const;
-const ROW_OFFSET = 16;
-const CELL_FADE = { duration: 0.2, ease: EASE_OUT } as const;
-const TOOLTIP_FADE = { duration: 0.14, ease: EASE_OUT } as const;
-const TOOLTIP_EDGE = 8;
-const COLUMN_STAGGER = 0.012;
-const LABEL_BLUR = 6;
-const LABEL_REVEAL = { duration: 0.45, ease: EASE_OUT } as const;
+const EASE_OUT = [0.22, 1, 0.36, 1] as const
+const SPRING = { type: "spring", bounce: 0.2, duration: 0.62 } as const
+const HEADER_SPRING = { ...SPRING, bounce: 0.45 } as const
+const ROW_SPRING = { ...SPRING, bounce: 0.26, delay: 0.08 } as const
+const ROW_OFFSET = 16
+const CELL_FADE = { duration: 0.2, ease: EASE_OUT } as const
+const TOOLTIP_FADE = { duration: 0.14, ease: EASE_OUT } as const
+const TOOLTIP_EDGE = 8
+const COLUMN_STAGGER = 0.012
+const LABEL_BLUR = 6
+const LABEL_REVEAL = { duration: 0.45, ease: EASE_OUT } as const
 
-const LEVELS = [0, 1, 2, 3, 4] as const;
+const LEVELS = [0, 1, 2, 3, 4] as const
 
 const MONTH_NAMES = [
   "Jan",
@@ -69,22 +147,45 @@ const MONTH_NAMES = [
   "Oct",
   "Nov",
   "Dec",
-];
+]
 
-function toMonthLabels(weeks: Contribution[][]) {
-  const labels: (string | null)[] = weeks.map(() => null);
-  const monthAt = (index: number) => weeks[index]?.[0]?.date.slice(5, 7);
+type MonthBlock = {
+  key: string
+  label: string
+  columns: (Contribution | null)[][]
+}
 
-  let start = 0;
-  for (let i = 1; i <= weeks.length; i++) {
-    if (i < weeks.length && monthAt(i) === monthAt(start)) continue;
-    if (i - start >= MIN_LABEL_WEEKS) {
-      labels[start] = MONTH_NAMES[Number(monthAt(start)) - 1] ?? null;
-    }
-    start = i;
+// months are cut at the exact flipping cell: each block holds precisely
+// its own calendar days, re-weeked Sunday-first with leading/trailing
+// blanks, so every month keeps its true shape
+function toMonthBlocks(
+  contributions: Contribution[],
+  months: number
+): MonthBlock[] {
+  const byMonth = new Map<string, Contribution[]>()
+  for (const day of contributions) {
+    const key = day.date.slice(0, 7)
+    const list = byMonth.get(key)
+    if (list) list.push(day)
+    else byMonth.set(key, [day])
   }
-
-  return labels;
+  return [...byMonth.entries()]
+    .slice(-Math.max(1, months))
+    .map(([key, days]) => {
+      const month = Number(key.slice(5, 7))
+      const cells: (Contribution | null)[] = [
+        ...Array<null>(new Date(`${days[0].date}T00:00:00Z`).getUTCDay()).fill(
+          null
+        ),
+        ...days,
+      ]
+      while (cells.length % 7 !== 0) cells.push(null)
+      const columns: (Contribution | null)[][] = []
+      for (let i = 0; i < cells.length; i += 7) {
+        columns.push(cells.slice(i, i + 7))
+      }
+      return { key, label: MONTH_NAMES[month - 1] ?? "", columns }
+    })
 }
 
 const LEVEL_OPACITY: Record<ContributionLevel, number> = {
@@ -93,83 +194,115 @@ const LEVEL_OPACITY: Record<ContributionLevel, number> = {
   2: 0.52,
   3: 0.76,
   4: 1,
-};
+}
 
-type LevelStyle = { backgroundColor: string; opacity: number };
+type LevelStyle = { backgroundColor: string; opacity: number }
 
-type HoveredDay = { day: Contribution; x: number; y: number };
+type HoveredDay = { day: Contribution; x: number; y: number }
 
 const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
   year: "numeric",
-});
+})
 
 function describeDay({ count, date }: Contribution) {
-  const noun = count === 1 ? "contribution" : "contributions";
-  return `${count} ${noun} on ${DATE_FORMAT.format(new Date(`${date}T00:00:00`))}`;
+  const noun = count === 1 ? "contribution" : "contributions"
+  return `${count} ${noun} on ${DATE_FORMAT.format(new Date(`${date}T00:00:00`))}`
 }
+
+function getStreaks(days: Contribution[]) {
+  let longest = 0
+  let run = 0
+  for (const day of days) {
+    run = day.count > 0 ? run + 1 : 0
+    if (run > longest) longest = run
+  }
+  // a quiet today doesn't break the streak — count back from yesterday
+  let current = 0
+  let end = days.length - 1
+  if (end >= 0 && days[end].count === 0) end -= 1
+  for (let i = end; i >= 0 && days[i].count > 0; i--) current += 1
+  return { current, longest }
+}
+
+const Stat = ({ value, label }: { value: React.ReactNode; label: string }) => {
+  const t = useGithubColors()
+  return (
+    <span
+      className="inline-flex shrink-0 items-baseline gap-1 rounded-full bg-neutral-900/[0.05] px-2 py-0.5 text-[11px] whitespace-nowrap text-neutral-500"
+      style={t ? { backgroundColor: t.statBg, color: t.statText } : undefined}
+    >
+      <span
+        className="font-semibold text-neutral-900 tabular-nums"
+        style={t ? { color: t.statValue } : undefined}
+      >
+        {value}
+      </span>
+      {label}
+    </span>
+  )
+}
+
+const StatsStrip = ({
+  streak,
+  average,
+  stats,
+}: {
+  streak: { current: number; longest: number }
+  average: string
+  stats?: ContributionStats
+}) => (
+  <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-1.5 overflow-hidden [mask-image:linear-gradient(to_right,black_75%,transparent)]">
+    <Stat
+      value={streak.current}
+      label={streak.current === 1 ? "day streak" : "days streak"}
+    />
+    <Stat value={streak.longest} label="best" />
+    <Stat value={average} label="/day" />
+    {stats?.pullRequests !== undefined && (
+      <Stat value={stats.pullRequests} label="PRs" />
+    )}
+    {stats?.reviews !== undefined && (
+      <Stat value={stats.reviews} label="reviews" />
+    )}
+    {stats?.issues !== undefined && (
+      <Stat value={stats.issues} label="issues" />
+    )}
+  </div>
+)
 
 function toScale(accent: string | string[]): LevelStyle[] {
   if (typeof accent === "string") {
     return LEVELS.map((level) => ({
       backgroundColor: accent,
       opacity: LEVEL_OPACITY[level],
-    }));
+    }))
   }
 
-  const colors = accent.length > 4 ? accent : ["transparent", ...accent];
+  const colors = accent.length > 4 ? accent : ["transparent", ...accent]
   return LEVELS.map((level) => {
-    const color = colors[level] ?? colors.at(-1) ?? "transparent";
-    return { backgroundColor: color, opacity: color === "transparent" ? 0 : 1 };
-  });
-}
-
-function toWeeks(contributions: Contribution[]) {
-  const weeks: Contribution[][] = [];
-  for (let i = 0; i < contributions.length; i += 7) {
-    weeks.push(contributions.slice(i, i + 7));
-  }
-  return weeks;
-}
-
-function useFittedColumns(cellSize: number, gap: number) {
-  const ref = React.useRef<HTMLDivElement>(null);
-  const [columns, setColumns] = React.useState<number>();
-
-  useIsoLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const measure = () =>
-      setColumns(
-        Math.max(1, Math.floor((el.clientWidth + gap) / (cellSize + gap))),
-      );
-
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [cellSize, gap]);
-
-  return [ref, columns] as const;
+    const color = colors[level] ?? colors.at(-1) ?? "transparent"
+    return { backgroundColor: color, opacity: color === "transparent" ? 0 : 1 }
+  })
 }
 
 const Tooltip = ({
   hovered,
   reduceMotion,
 }: {
-  hovered: HoveredDay;
-  reduceMotion: boolean | null;
+  hovered: HoveredDay
+  reduceMotion: boolean | null
 }) => {
-  const ref = React.useRef<HTMLDivElement>(null);
-  const [left, setLeft] = React.useState(hovered.x);
+  const ref = React.useRef<HTMLDivElement>(null)
+  const [left, setLeft] = React.useState(hovered.x)
+  const t = useGithubColors()
 
   useIsoLayoutEffect(() => {
-    const half = (ref.current?.offsetWidth ?? 0) / 2;
-    const edge = TOOLTIP_EDGE + half;
-    setLeft(Math.min(Math.max(hovered.x, edge), window.innerWidth - edge));
-  }, [hovered]);
+    const half = (ref.current?.offsetWidth ?? 0) / 2
+    const edge = TOOLTIP_EDGE + half
+    setLeft(Math.min(Math.max(hovered.x, edge), window.innerWidth - edge))
+  }, [hovered])
 
   return createPortal(
     <div
@@ -182,7 +315,8 @@ const Tooltip = ({
     >
       <motion.div
         ref={ref}
-        className="whitespace-nowrap rounded-lg bg-foreground px-2 py-1 text-[11px] font-medium text-background shadow-md"
+        className="rounded-lg bg-neutral-900 px-2 py-1 text-[11px] font-medium whitespace-nowrap text-white shadow-md"
+        style={t ? { backgroundColor: t.tooltipBg, color: t.tooltipFg } : undefined}
         initial={reduceMotion ? false : { opacity: 0, scale: 0.94 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.94 }}
@@ -191,9 +325,9 @@ const Tooltip = ({
         {describeDay(hovered.day)}
       </motion.div>
     </div>,
-    document.body,
-  );
-};
+    document.body
+  )
+}
 
 const ContributionGrid = ({
   contributions,
@@ -204,95 +338,141 @@ const ContributionGrid = ({
   label,
   reduceMotion,
 }: {
-  contributions: Contribution[];
-  scale: LevelStyle[];
-  cellSize: number;
-  months: number;
-  showMonths: boolean;
-  label: string;
-  reduceMotion: boolean | null;
+  contributions: Contribution[]
+  scale: LevelStyle[]
+  cellSize: number
+  months: number
+  showMonths: boolean
+  label: string
+  reduceMotion: boolean | null
 }) => {
-  const weeks = React.useMemo(() => toWeeks(contributions), [contributions]);
-  const gap = gapFor(cellSize);
-  const [ref, columns] = useFittedColumns(cellSize, gap);
-  const [hovered, setHovered] = React.useState<HoveredDay>();
+  const gap = gapFor(cellSize)
+  const monthGap = monthGapFor(cellSize)
+  const [hovered, setHovered] = React.useState<HoveredDay>()
+  const t = useGithubColors()
 
-  const cap = Math.min(weeks.length, weeksFor(months));
-  const visible = weeks.slice(-Math.min(cap, columns ?? cap));
-  const sweepEnd = (visible.length - 1) * COLUMN_STAGGER + CELL_FADE.duration;
+  const blocks = React.useMemo(
+    () => toMonthBlocks(contributions, months),
+    [contributions, months]
+  )
+
+  // All month blocks always render — the grid scrolls horizontally
+  // instead of trimming months to fit the measured width.
+  const visible = blocks
+
+  const totalColumns = visible.reduce((n, b) => n + b.columns.length, 0)
+  const sweepEnd =
+    Math.max(0, totalColumns - 1) * COLUMN_STAGGER + CELL_FADE.duration
 
   const hover = (day: Contribution) => (event: React.PointerEvent) => {
-    const cell = event.currentTarget.getBoundingClientRect();
-    setHovered({ day, x: cell.left + cell.width / 2, y: cell.top });
-  };
+    const cell = event.currentTarget.getBoundingClientRect()
+    setHovered({ day, x: cell.left + cell.width / 2, y: cell.top })
+  }
 
   return (
     <div
-      ref={ref}
       data-slot="github-activity-grid"
       role="img"
       aria-label={label}
       className="relative"
     >
-      {showMonths && (
-        <motion.div
-          className="flex justify-center"
-          style={{ gap, marginBottom: gap }}
-          initial={
-            reduceMotion
-              ? false
-              : { opacity: 0, filter: `blur(${LABEL_BLUR}px)` }
-          }
-          animate={{ opacity: 1, filter: "blur(0px)" }}
-          transition={{
-            ...LABEL_REVEAL,
-            delay: reduceMotion ? 0 : sweepEnd,
-          }}
-        >
-          {toMonthLabels(visible).map((month, index) => (
-            <div
-              key={index}
-              className="relative h-3 shrink-0"
-              style={{ width: cellSize }}
-            >
-              {month && (
-                <span className="absolute left-0 top-0 text-[10px] leading-none text-foreground/40">
-                  {month}
-                </span>
-              )}
-            </div>
-          ))}
-        </motion.div>
-      )}
-
-      <div
-        className="flex justify-center overflow-hidden"
-        style={{ gap }}
-        onPointerLeave={() => setHovered(undefined)}
-      >
-        {visible.map((week, weekIndex) => (
-          <div key={weekIndex} className="flex flex-col" style={{ gap }}>
-            {week.map((day) => (
-              <motion.div
-                key={day.date}
-                onPointerEnter={hover(day)}
-                className="shrink-0 rounded-[3px] bg-foreground/[0.08]"
-                style={{ width: cellSize, height: cellSize }}
-                initial={reduceMotion ? false : { opacity: 0, scale: 0.4 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{
-                  ...CELL_FADE,
-                  delay: reduceMotion ? 0 : weekIndex * COLUMN_STAGGER,
-                }}
-              >
-                <div
-                  className="h-full w-full rounded-[3px]"
-                  style={scale[day.level] ?? scale[0]}
-                />
-              </motion.div>
+      {/* months + cells share one x-scroll container — width overflows
+          here, never by trimming months or resizing cells. Scrollbar
+          hidden: overflow is discoverable via drag/trackpad scroll */}
+      <div className="overflow-x-auto rounded-2xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="w-fit min-w-full rounded-2xl">
+        {showMonths && (
+          <motion.div
+            className="mt-3 flex justify-center"
+            style={{ gap: monthGap, marginBottom: gap }}
+            initial={
+              reduceMotion
+                ? false
+                : { opacity: 0, filter: `blur(${LABEL_BLUR}px)` }
+            }
+            animate={{ opacity: 1, filter: "blur(0px)" }}
+            transition={{
+              ...LABEL_REVEAL,
+              delay: reduceMotion ? 0 : sweepEnd,
+            }}
+          >
+            {visible.map((block) => (
+              <div key={block.key} className="flex" style={{ gap }}>
+                {block.columns.map((_, ci) => (
+                  <div
+                    key={ci}
+                    className="relative h-3 shrink-0"
+                    style={{ width: cellSize }}
+                  >
+                    {ci === 0 && (
+                      <span
+                        className="absolute top-0 left-0 text-[10px] leading-none whitespace-nowrap text-neutral-500"
+                        style={t ? { color: t.monthText } : undefined}
+                      >
+                        {block.label}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
             ))}
-          </div>
-        ))}
+          </motion.div>
+        )}
+
+        <div
+          className="flex justify-center overflow-hidden pb-5"
+          style={{ gap: monthGap }}
+          onPointerLeave={() => setHovered(undefined)}
+        >
+          {(() => {
+            let gi = 0
+            return visible.map((block) => (
+              <div key={block.key} className="flex" style={{ gap }}>
+                {block.columns.map((column, ci) => {
+                  const index = gi++
+                  return (
+                    <div key={ci} className="flex flex-col" style={{ gap }}>
+                      {column.map((day, di) =>
+                        day ? (
+                          <motion.div
+                            key={day.date}
+                            onPointerEnter={hover(day)}
+                            className="shrink-0 rounded-[3px] bg-neutral-900/[0.08]"
+                            style={{
+                              width: cellSize,
+                              height: cellSize,
+                              ...(t ? { backgroundColor: t.track } : null),
+                            }}
+                            initial={
+                              reduceMotion ? false : { opacity: 0, scale: 0.4 }
+                            }
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{
+                              ...CELL_FADE,
+                              delay: reduceMotion ? 0 : index * COLUMN_STAGGER,
+                            }}
+                          >
+                            <div
+                              className="h-full w-full rounded-[3px]"
+                              style={scale[day.level] ?? scale[0]}
+                            />
+                          </motion.div>
+                        ) : (
+                          <div
+                            key={`blank-${di}`}
+                            aria-hidden
+                            style={{ width: cellSize, height: cellSize }}
+                          />
+                        )
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            ))
+          })()}
+        </div>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -305,8 +485,8 @@ const ContributionGrid = ({
         )}
       </AnimatePresence>
     </div>
-  );
-};
+  )
+}
 
 const Avatar = ({
   repo,
@@ -314,102 +494,139 @@ const Avatar = ({
   transition,
   className,
 }: {
-  repo: RepoContribution;
-  layoutId: string;
-  transition: Transition;
-  className?: string;
-}) => (
-  <motion.span
-    layoutId={layoutId}
-    transition={transition}
-    className={cn(
-      "grid size-7 shrink-0 place-items-center overflow-hidden rounded-full bg-neutral-200 text-[11px] font-medium uppercase text-foreground/70 ring-2 ring-background dark:bg-neutral-800",
-      "[&_img]:size-full [&_img]:object-cover [&_svg]:size-full",
-      className,
-    )}
-  >
-    {repo.logo ?? repo.name.charAt(0)}
-  </motion.span>
-);
+  repo: RepoContribution
+  layoutId: string
+  transition: Transition
+  className?: string
+}) => {
+  const t = useGithubColors()
+  return (
+    <motion.span
+      layoutId={layoutId}
+      transition={transition}
+      className={cn(
+        "grid size-7 shrink-0 place-items-center overflow-hidden rounded-full bg-neutral-200 text-[11px] font-medium text-neutral-500 uppercase ring-2 ring-white",
+        "[&_img]:size-full [&_img]:object-cover [&_svg]:size-full",
+        className
+      )}
+      style={
+        t
+          ? {
+              backgroundColor: t.avatarBg,
+              color: t.avatarFg,
+              boxShadow: `0 0 0 2px ${t.avatarRing}`,
+            }
+          : undefined
+      }
+    >
+      {repo.logo ?? repo.name.charAt(0)}
+    </motion.span>
+  )
+}
 
 const RepoRow = ({
   repo,
   layoutId,
   transition,
 }: {
-  repo: RepoContribution;
-  layoutId: string;
-  transition: Transition;
+  repo: RepoContribution
+  layoutId: string
+  transition: Transition
 }) => {
-  const className =
-    "flex items-center gap-3 rounded-xl mx-2 px-2 py-2 transition-colors hover:bg-foreground/5";
+  const t = useGithubColors()
+  const className = t
+    ? "flex items-center gap-3 rounded-xl mx-2 px-2 py-2 transition-colors hover:bg-(--gh-row-hover)"
+    : "flex items-center gap-3 rounded-xl mx-2 px-2 py-2 transition-colors hover:bg-neutral-900/[0.04]"
 
   const content = (
     <>
       <Avatar repo={repo} layoutId={layoutId} transition={transition} />
-      <span className="flex-1 truncate text-sm text-foreground">
+      <span
+        className="flex-1 truncate text-sm text-neutral-900"
+        style={t ? { color: t.repoName } : undefined}
+      >
         {repo.name}
       </span>
-      <span className="text-sm tabular-nums text-foreground/70">
+      <span
+        className="text-sm text-neutral-500 tabular-nums"
+        style={t ? { color: t.repoCount } : undefined}
+      >
         {repo.count}
       </span>
     </>
-  );
+  )
 
   return repo.href ? (
-    <a href={repo.href} target="_blank" rel="noreferrer" className={className}>
+    <a
+      href={repo.href}
+      target="_blank"
+      rel="noreferrer"
+      className={className}
+      style={t ? ({ "--gh-row-hover": t.rowHoverVar } as React.CSSProperties) : undefined}
+    >
       {content}
     </a>
   ) : (
-    <div className={className}>{content}</div>
-  );
-};
+    <div
+      className={className}
+      style={t ? ({ "--gh-row-hover": t.rowHoverVar } as React.CSSProperties) : undefined}
+    >
+      {content}
+    </div>
+  )
+}
 
 const Chevron = ({
   open,
   transition,
 }: {
-  open: boolean;
-  transition: Transition;
-}) => (
-  <motion.svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden
-    className="size-7 text-[#C4C9CC] dark:text-[#3E4346]"
-    initial={false}
-    animate={{ rotate: open ? 180 : 0 }}
-    transition={transition}
-  >
-    <circle cx="12" cy="12" r="10" />
-    <path d="m16 10-4 4-4-4" />
-  </motion.svg>
-);
+  open: boolean
+  transition: Transition
+}) => {
+  const t = useGithubColors()
+  return (
+    <motion.svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className="size-7 text-[#C4C9CC]"
+      style={t ? { color: t.chevron } : undefined}
+      initial={false}
+      animate={{ rotate: open ? 180 : 0 }}
+      transition={transition}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="m16 10-4 4-4-4" />
+    </motion.svg>
+  )
+}
 
 export type GitHubActivityProps = React.ComponentProps<"div"> & {
-  username: string;
-  contributions: Contribution[];
-  repos: RepoContribution[];
-  year?: number;
-  accent?: string | string[];
-  cellSize?: number;
-  months?: number;
-  showMonths?: boolean;
-  label?: string;
-  defaultOpen?: boolean;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-};
+  username: string
+  contributions: Contribution[]
+  repos: RepoContribution[]
+  stats?: ContributionStats
+  year?: number
+  accent?: string | string[]
+  cellSize?: number
+  months?: number
+  showMonths?: boolean
+  label?: string
+  defaultOpen?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
 
 const GitHubActivity = ({
   className,
   username,
   contributions,
   repos,
+  stats,
   year,
   accent = DEFAULT_ACCENT,
   cellSize = DEFAULT_CELL_SIZE,
@@ -422,62 +639,70 @@ const GitHubActivity = ({
   style,
   ...props
 }: GitHubActivityProps) => {
-  const reduceMotion = useReducedMotion();
-  const uid = React.useId();
-  const [openState, setOpenState] = React.useState(defaultOpen);
+  const reduceMotion = useReducedMotion()
+  const uid = React.useId()
+  const [openState, setOpenState] = React.useState(defaultOpen)
 
-  const open = openProp ?? openState;
+  const open = openProp ?? openState
   const toggle = () => {
-    if (openProp === undefined) setOpenState(!open);
-    onOpenChange?.(!open);
-  };
+    if (openProp === undefined) setOpenState(!open)
+    onOpenChange?.(!open)
+  }
 
-  const scale = React.useMemo(() => toScale(accent), [accent]);
-  const transition = reduceMotion ? { duration: 0 } : SPRING;
-  const headerTransition = reduceMotion ? { duration: 0 } : HEADER_SPRING;
-  const rowTransition = reduceMotion ? { duration: 0 } : ROW_SPRING;
+  const t = useGithubColors()
+  const scale = React.useMemo(
+    () => toScale(t?.scale ?? accent),
+    [t, accent]
+  )
+  const transition = reduceMotion ? { duration: 0 } : SPRING
+  const headerTransition = reduceMotion ? { duration: 0 } : HEADER_SPRING
+  const rowTransition = reduceMotion ? { duration: 0 } : ROW_SPRING
 
-  const kick = reduceMotion ? {} : { x: ROW_OFFSET, y: ROW_OFFSET };
+  const kick = reduceMotion ? {} : { x: ROW_OFFSET, y: ROW_OFFSET }
   const listMotion = {
     initial: { opacity: 0, ...kick },
     animate: { opacity: 1, x: 0, y: 0 },
     exit: { opacity: 0, ...kick },
-  };
+  }
 
   const total = React.useMemo(
     () => contributions.reduce((sum, day) => sum + day.count, 0),
-    [contributions],
-  );
+    [contributions]
+  )
 
-  const parsedYear = Number(contributions.at(-1)?.date.slice(0, 4));
-  const displayYear = year ?? (Number.isFinite(parsedYear) ? parsedYear : null);
-  const heading = `${total} contributions${displayYear ? ` in ${displayYear}` : ""}`;
+  const streak = React.useMemo(() => getStreaks(contributions), [contributions])
+  const average = contributions.length
+    ? (total / contributions.length).toFixed(1)
+    : "0.0"
 
-  const gap = gapFor(cellSize);
+  const parsedYear = Number(contributions.at(-1)?.date.slice(0, 4))
+  const displayYear = year ?? (Number.isFinite(parsedYear) ? parsedYear : null)
+  const heading = `${total} contributions${displayYear ? ` in ${displayYear}` : ""}`
+
+  const gap = gapFor(cellSize)
+  const monthGap = monthGapFor(cellSize)
   const columns = Math.min(
     Math.ceil(contributions.length / 7),
-    weeksFor(months),
-  );
+    weeksFor(months)
+  )
   const width = Math.max(
     MIN_CARD_WIDTH,
-    columns * (cellSize + gap) - gap + CARD_PADDING,
-  );
+    columns * (cellSize + gap) - gap + months * (monthGap - gap) + CARD_PADDING
+  )
 
   return (
     <div
       data-slot="github-activity"
       className={cn(
-        "relative max-w-full overflow-hidden rounded-[28px] bg-white p-4 dark:bg-black",
-        repos.length > 0 && "pb-[76px]",
-        className,
+        "relative h-full min-w-full overflow-hidden rounded-[28px] bg-white p-4 [color-scheme:light]",
+        "pb-[48px]",
+        className
       )}
-      style={{ width, ...style }}
+      // Never wider than the bento cell — excess grid width scrolls
+      // inside (see the x-scroll container above), the card never clips.
+      style={{ width, maxWidth: "100%", ...(t ? { backgroundColor: t.cardBg } : null), ...style }}
       {...props}
     >
-      <p className="mb-4 text-base font-medium text-foreground px-1.5">
-        {heading}
-      </p>
-
       <ContributionGrid
         contributions={contributions}
         scale={scale}
@@ -488,25 +713,49 @@ const GitHubActivity = ({
         reduceMotion={reduceMotion}
       />
 
-      {repos.length > 0 && (
+      {
         <motion.div
           layout
           id={`${uid}-panel`}
           data-slot="github-activity-panel"
           data-state={open ? "open" : "closed"}
           className={cn(
-            "absolute inset-x-3 bottom-3 overflow-hidden bg-card/90 backdrop-blur-xl",
-            open && "top-3",
+            "absolute inset-x-3 bottom-3 overflow-hidden border border-neutral-200/70 bg-white/90 backdrop-blur-xl",
+            open && "top-3"
           )}
-          style={{ borderRadius: 18 }}
+          style={{
+            borderRadius: 18,
+            ...(t ? { borderColor: t.panelBorder, backgroundColor: t.panelBg } : null),
+          }}
           transition={transition}
         >
           <motion.div
             layout="position"
             transition={headerTransition}
-            className="flex items-center justify-between gap-3 py-3 px-4"
+            className="flex items-center justify-between gap-3 px-4 py-2"
           >
-            <span className="truncate text-sm text-foreground">{label}</span>
+            {open ? (
+              <span
+                className="truncate text-sm text-neutral-900"
+                style={t ? { color: t.repoName } : undefined}
+              >
+                {label}
+              </span>
+            ) : (
+              <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-hidden">
+                <p
+                  className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-sm text-neutral-900"
+                  style={t ? { color: t.repoName } : undefined}
+                >
+                  <RiGithubFill size={16} className="shrink-0" aria-hidden />
+                  <span className="truncate">
+                    <span className="font-bold tabular-nums">{total}</span>{" "}
+                    contributions{displayYear ? ` in ${displayYear}` : ""}
+                  </span>
+                </p>
+                <StatsStrip streak={streak} average={average} stats={stats} />
+              </div>
+            )}
 
             <div className="flex items-center gap-3">
               {!open && (
@@ -531,7 +780,8 @@ const GitHubActivity = ({
                 aria-label={
                   open ? "Hide top repositories" : "Show top repositories"
                 }
-                className="grid size-7 shrink-0 place-items-center rounded-full bg-card"
+                className="grid size-7 shrink-0 place-items-center rounded-full bg-neutral-100"
+                style={t ? { backgroundColor: t.toggleBg } : undefined}
               >
                 <Chevron open={open} transition={transition} />
               </button>
@@ -547,6 +797,14 @@ const GitHubActivity = ({
                 transition={rowTransition}
                 className="px-0.5 pb-1"
               >
+                {repos.length === 0 && (
+                  <li
+                    className="px-4 py-3 text-sm text-neutral-500"
+                    style={t ? { color: t.emptyText } : undefined}
+                  >
+                    No recent repositories
+                  </li>
+                )}
                 {repos.map((repo, index) => (
                   <li key={index}>
                     <RepoRow
@@ -560,10 +818,10 @@ const GitHubActivity = ({
             )}
           </AnimatePresence>
         </motion.div>
-      )}
+      }
     </div>
-  );
-};
+  )
+}
 
-export { GitHubActivity };
-export default GitHubActivity;
+export { GitHubActivity }
+export default GitHubActivity

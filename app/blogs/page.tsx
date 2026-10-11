@@ -1,9 +1,10 @@
 "use client"
 
-import Link from "next/link"
+import { Link } from "next-view-transitions"
 import { Text, CardContext } from "@/components/ui/text"
 import { SiteShell } from "@/components/site-shell"
 import { blogPosts } from "@/lib/dummy-data"
+import { rememberBlogReturn } from "@/lib/blog-return"
 import { defaultPalette } from "@/lib/color-utils"
 
 const FB = defaultPalette
@@ -15,25 +16,39 @@ const CARD_STYLE = {
 
 export default function BlogsPage() {
   return (
-    <SiteShell>
+    <SiteShell showHatch={false}>
       <div className="max-w-3xl space-y-8">
         <Text.Heading>Blogs</Text.Heading>
-        <Text.Subheading>Dummy posts — Instrument Serif subheadings</Text.Subheading>
+        <Text.Subheading>
+          Dummy posts — Instrument Serif subheadings
+        </Text.Subheading>
         <div className="grid gap-4">
           {blogPosts.map((post) => (
             <CardContext.Provider key={post.slug} value={true}>
               <Link
                 href={`/blogs/${post.slug}`}
-                className="block rounded-2xl border p-5 backdrop-blur hover:opacity-95 transition-transform hover:scale-[1.01]"
+                onClick={rememberBlogReturn}
+                className="block rounded-2xl border p-5 backdrop-blur transition-transform hover:scale-[1.01] hover:opacity-95"
                 style={{ ...CARD_STYLE }}
               >
-                <Text.Subheading as="h3" size="sm" className="!text-lg">
+                <Text.Subheading
+                  as="h3"
+                  size="sm"
+                  className="!text-lg"
+                  style={{ viewTransitionName: `blog-title-${post.slug}` }}
+                >
                   {post.title}
                 </Text.Subheading>
-                <Text.Body size="sm" className="mt-2 opacity-90">
+                <Text.Body
+                  size="sm"
+                  className="mt-2 opacity-90"
+                  style={{ viewTransitionName: `blog-excerpt-${post.slug}` }}
+                >
                   {post.excerpt}
                 </Text.Body>
-                <Text.Caption className="mt-3 block">{post.date} · {post.readingTime} · {post.tags.join(" · ")}</Text.Caption>
+                <Text.Caption className="mt-3 block">
+                  {post.date} · {post.readingTime} · {post.tags.join(" · ")}
+                </Text.Caption>
               </Link>
             </CardContext.Provider>
           ))}

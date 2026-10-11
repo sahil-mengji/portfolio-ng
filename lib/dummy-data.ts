@@ -21,11 +21,39 @@ export const blogPosts: BlogPost[] = [
   {
     slug: "designing-with-a-single-color",
     title: "Designing with a Single Color",
-    excerpt: "How one picker can drive a whole system — bg is primary, guidelines flip white/dark by luminosity.",
+    excerpt:
+      "How one picker can drive a whole system — bg is primary, guidelines flip white/dark by luminosity.",
     date: "2026-02-14",
     readingTime: "5 min",
     tags: ["Design", "Theming"],
-    body: "We start with a single hex. Luminance decides guidelines: dark hues get white, light hues get a darker shade of the same color. Primary is the site background. Navbar, text and grid all derive from that one value. The trick is hue-tinted surfaces so the UI never collapses to flat white/black.",
+    body: `We start with a single hex. Luminance decides guidelines: dark hues get white, light hues get a darker shade of the same color.
+
+## One value, whole system
+
+Primary is the site background. Navbar, text and grid all derive from that one value — read more in the [theming notes](/design-system) or the [OKLCH docs](https://oklch.com).
+
+### Token mapping
+
+| Token | Derivation | Notes |
+| --- | --- | --- |
+| \`--primary\` | picked hex | page background |
+| \`--grid-ink\` | luminance flip | white on dark, dark shade on light |
+| \`--surface\` | hue-tinted mix | never flat white/black |
+
+> The trick is hue-tinted surfaces: mix the primary hue into every surface so the UI never collapses to flat white or black.
+
+### Derivation snippet
+
+\`\`\`css
+:root {
+  --primary: oklch(0.55 0.2 270);
+  --grid-ink: oklch(from var(--primary) clamp(0.2, 0.95 - l, 0.95) 0.02 h);
+}
+\`\`\`
+
+- Pick one hex in the [picker](/design-system)
+- Surfaces follow automatically
+- Text stays legible via \`color-mix\` tints`,
   },
   {
     slug: "instrument-serif-in-practice",
@@ -34,7 +62,23 @@ export const blogPosts: BlogPost[] = [
     date: "2026-01-28",
     readingTime: "4 min",
     tags: ["Typography"],
-    body: "Subheadings use Instrument Serif — a sharp, high-contrast serif that pairs with the neutral sans. Headings stay bold sans, body stays relaxed. All via <Text> presets: Text.Heading, Text.Subheading (Instrument Serif), Text.Body, Text.Link.",
+    body: `Subheadings use <Highlight>Instrument Serif</Highlight> — a sharp, high-contrast serif that pairs with the neutral sans.
+
+## The pairing
+
+Headings stay bold sans, body stays relaxed. All via presets: \`Text.Heading\`, \`Text.Subheading\` (Instrument Serif), \`Text.Body\`, \`Text.Link\`.
+
+<Callout title="When to reach for it">
+Pull quotes, section titles and empty states. Never body copy — contrast this high gets tiring at paragraph length.
+</Callout>
+
+### Rules of thumb
+
+1. One serif voice per page
+2. Tight leading and tracking
+3. Pair with a quiet grotesque — see [fontsource](https://fontsource.org) for self-hosting
+
+*Italic* for emphasis, **bold** for structure, ~~strikethrough~~ for retired drafts.`,
   },
   {
     slug: "floating-navbar-tokens",
@@ -43,7 +87,33 @@ export const blogPosts: BlogPost[] = [
     date: "2026-01-10",
     readingTime: "3 min",
     tags: ["UI", "Tokens"],
-    body: "Navbar background is now primary. Foreground is gridInk, muted is gridInk at 68% opacity, accent pill is gridInk at 14%. It hides on scroll down and reappears on scroll up — fully driven by the picker.",
+    body: `Navbar background is now primary. Foreground is gridInk, muted is gridInk at 68% opacity, accent pill is gridInk at 14%.
+
+## Token recipe
+
+| Token | Value | Used for |
+| --- | --- | --- |
+| \`--nav-bg\` | \`var(--primary)\` | floating bar |
+| \`--nav-fg\` | \`var(--grid-ink)\` | links |
+| \`--nav-muted\` | \`grid-ink 68%\` | secondary text |
+
+### Scroll behavior
+
+\`\`\`ts
+useMotionValueEvent(scrollY, "change", (y) => {
+  hidden.set(y > last && y > 120) // hide on scroll down
+})
+\`\`\`
+
+---
+
+## Rollout checklist
+
+- [x] Bg follows the picker
+- [x] Hides on scroll down, returns on scroll up
+- [ ] Reduced-motion path
+
+It hides on scroll down and reappears on scroll up — fully driven by the picker.`,
   },
 ]
 
@@ -59,7 +129,8 @@ export const projects: Project[] = [
   {
     slug: "color-picker",
     title: "Color Picker — Left Bottom",
-    excerpt: "Native input only, better looking — pill trigger, presets, eyedropper.",
+    excerpt:
+      "Native input only, better looking — pill trigger, presets, eyedropper.",
     year: "2026",
     stack: ["React", "Color"],
     body: "Kept functioning identical to the native input (updatePalette on change) but wrapped in a themed pill + popover with presets. Positioned left-bottom, not top-right. No HSL sliders creep — just swatch + hex + presets.",
@@ -67,7 +138,8 @@ export const projects: Project[] = [
   {
     slug: "text-system",
     title: "Text System",
-    excerpt: "Reusable Text.heading / .subheading / .body / .link with theme-aware defaults.",
+    excerpt:
+      "Reusable Text.heading / .subheading / .body / .link with theme-aware defaults.",
     year: "2026",
     stack: ["CVA", "Typography"],
     body: "Text presets need only children; className is for Tailwind positioning. Colors default via palette: heading/link → gridInk, body → text, subheading/caption → secondaryText. Override with color or className anytime.",
@@ -76,8 +148,16 @@ export const projects: Project[] = [
 
 export const showcaseItems = [
   { title: "Primary is BG", desc: "Bg = picked hue", swatch: "primary" },
-  { title: "White on Dark", desc: "Dark picker → white guidelines", swatch: "gridInk-dark" },
-  { title: "Darker on Light", desc: "Light picker → dark shade guidelines", swatch: "gridInk-light" },
+  {
+    title: "White on Dark",
+    desc: "Dark picker → white guidelines",
+    swatch: "gridInk-dark",
+  },
+  {
+    title: "Darker on Light",
+    desc: "Light picker → dark shade guidelines",
+    swatch: "gridInk-light",
+  },
 ]
 
 export type Role = {
@@ -93,6 +173,7 @@ export type WorkExp = {
   company: string
   location: string
   logo: string // emoji or URL
+  photos?: string[] // board photos for the preview pane
   roles: Role[]
 }
 
@@ -104,6 +185,7 @@ export const workExperience: WorkExp[] = [
     company: "GEP Worldwide",
     location: "Hyderabad, Telangana, India",
     logo: DUMMY_LOGO,
+    photos: ["/gep1.jpeg", "/gep2.jpeg"],
     roles: [
       {
         title: "Software Engineer Intern",
@@ -290,23 +372,79 @@ export type Education = {
   degree: string
   period: string
   location: string
+  logo?: string
   details: string[]
+  coursework?: string[]
+  courseProjects?: { title: string; desc: string }[]
 }
 
 export const education: Education[] = [
   {
-    school: "Berlin University of the Arts",
-    degree: "M.A. Interface Design",
-    period: "2017 — 2019",
-    location: "Berlin",
-    details: ["Thesis on generative design systems", "Motion & typography focus"],
+    school: "National Institute of Technology Karnataka (NITK), Surathkal",
+    degree: "B.Tech in Computer Science and Engineering",
+    period: "2023 — 2027",
+    location: "Surathkal",
+    logo: "https://www.google.com/s2/favicons?domain=nitk.ac.in&sz=128",
+    details: ["Focused on systems, full-stack development & system design"],
+    coursework: [
+      "Computer Science",
+      "Data Structures & Algorithms",
+      "Software Engineering",
+      "DBMS",
+      "Operating Systems",
+      "Computer Networks",
+    ],
+    courseProjects: [
+      { title: "DBMS Mini Project", desc: "Database design & SQL coursework" },
+      { title: "Full-Stack Web App", desc: "Software Engineering coursework" },
+      { title: "ML Course Project", desc: "Machine learning coursework" },
+      { title: "Networks / OS Project", desc: "Systems coursework" },
+    ],
   },
   {
-    school: "Loughborough University",
-    degree: "B.Sc. Computer Science",
-    period: "2014 — 2017",
-    location: "Loughborough",
-    details: ["First-class honours", "HCI & graphics electives"],
+    school: "Gurukul Independent PU College of Science, Kalaburagi",
+    degree: "11th and 12th Grade (Pre-University)",
+    period: "2021 — 2023",
+    location: "Kalaburagi",
+    logo: "https://www.google.com/s2/favicons?domain=gurukul.edu.in&sz=128",
+    details: ["Science stream", "Physics, Chemistry, Mathematics"],
+  },
+  {
+    school: "Sardar Vallabhbhai Patel Memorial High School, Kalaburagi",
+    degree: "Secondary Education",
+    period: "2008 — 2021",
+    location: "Kalaburagi",
+    details: ["Basic education with mathematics & science focus"],
+  },
+]
+
+export type Certification = {
+  title: string
+  org: string
+  href: string
+  year?: string
+}
+
+export const certifications: Certification[] = [
+  {
+    title: "AWS Certified Cloud Practitioner",
+    org: "Amazon Web Services",
+    href: "https://aws.amazon.com/certification/certified-cloud-practitioner/",
+  },
+  {
+    title: "Meta Front-End Developer Professional Certificate",
+    org: "Meta · Coursera",
+    href: "https://www.coursera.org/professional-certificates/meta-front-end-developer",
+  },
+  {
+    title: "Google Professional Certificates",
+    org: "Google · Coursera",
+    href: "https://grow.google/certificates/",
+  },
+  {
+    title: "NPTEL / SWAYAM Courses",
+    org: "IIT / IISc",
+    href: "https://nptel.ac.in",
   },
 ]
 
@@ -315,34 +453,90 @@ export type Achievement = {
   org: string
   year: string
   description: string
+  photos?: string[]
+  links?: { label: string; href: string }[]
 }
 
 export const achievements: Achievement[] = [
   {
-    title: "Awwwards Honorable Mention",
-    description: "Portfolio experience cited for interaction craft",
-    org: "Awwwards",
-    year: "2025",
+    title: "Polkadot Assethub Hackathon — 2nd Runner-Up",
+    description: "2nd runner-up building on Polkadot AssetHub",
+    org: "Polkadot",
+    year: "Jun 2025",
+    photos: [
+      "https://picsum.photos/seed/polkadot-1/640/480",
+      "https://picsum.photos/seed/polkadot-2/640/480",
+      "https://picsum.photos/seed/polkadot-3/640/480",
+    ],
+    links: [
+      { label: "Project", href: "https://github.com/" },
+      { label: "Demo", href: "https://example.com/" },
+    ],
   },
   {
-    title: "Design Systems Speaker",
-    description: "Talk on single-picker theming at a Berlin meetup",
-    org: "Design Systems Berlin",
-    year: "2024",
+    title: "Hackverse 2025 — Best Product Design",
+    description: "Best Product Design award at NITK's national hackathon",
+    org: "Hackverse NITK",
+    year: "Feb 2025",
+    photos: [
+      "https://picsum.photos/seed/hackverse-1/640/480",
+      "https://picsum.photos/seed/hackverse-2/640/480",
+      "https://picsum.photos/seed/hackverse-3/640/480",
+    ],
+    links: [
+      { label: "Project", href: "https://github.com/" },
+      { label: "Demo", href: "https://example.com/" },
+    ],
   },
   {
-    title: "Open Source — 2k stars",
-    description: "Theming toolkit adopted across portfolio starters",
-    org: "GitHub",
-    year: "2024",
+    title: "Wells Fargo x Engineer Hackathon — Top 5 Finalist",
+    description: "Top 5 finalist at the Wells Fargo × Engineer hackathon",
+    org: "Engineer NITK",
+    year: "Nov 2024",
+    photos: [
+      "https://picsum.photos/seed/engineer-1/640/480",
+      "https://picsum.photos/seed/engineer-2/640/480",
+      "https://picsum.photos/seed/engineer-3/640/480",
+    ],
+    links: [
+      { label: "Project", href: "https://github.com/" },
+      { label: "Demo", href: "https://example.com/" },
+    ],
+  },
+  {
+    title: "Silicon Maze CTF — Winner",
+    description: "Winner of the Silicon Maze CTF",
+    org: "Web Enthusiasts Club NITK",
+    year: "Sep 2024",
+    photos: [
+      "https://picsum.photos/seed/ctf-1/640/480",
+      "https://picsum.photos/seed/ctf-2/640/480",
+      "https://picsum.photos/seed/ctf-3/640/480",
+    ],
+    links: [
+      { label: "Project", href: "https://github.com/" },
+      { label: "Write-up", href: "https://example.com/" },
+    ],
   },
 ]
 
 export const bentoItems = [
-  { title: "12 tokens", desc: "One hex → primary, gridInk, surface, text…", span: "col-span-2 row-span-1" },
-  { title: "Grid", desc: "22px cells, 5 major, arcs & angles", span: "col-span-1 row-span-2" },
+  {
+    title: "12 tokens",
+    desc: "One hex → primary, gridInk, surface, text…",
+    span: "col-span-2 row-span-1",
+  },
+  {
+    title: "Grid",
+    desc: "22px cells, 5 major, arcs & angles",
+    span: "col-span-1 row-span-2",
+  },
   { title: "Type", desc: "Instrument Serif subheads", span: "col-span-1" },
   { title: "Nav", desc: "Primary bg, hides on scroll", span: "col-span-1" },
-  { title: "Picker", desc: "Left-bottom, native + presets", span: "col-span-2" },
+  {
+    title: "Picker",
+    desc: "Left-bottom, native + presets",
+    span: "col-span-2",
+  },
   { title: "Motion", desc: "Drafting anim, blur, spring", span: "col-span-1" },
 ]

@@ -33,6 +33,10 @@ export async function GET(request: Request) {
                                     }
                                 }
                             }
+                            totalCommitContributions
+                            totalIssueContributions
+                            totalPullRequestContributions
+                            totalPullRequestReviewContributions
                         }
                     }
                 }`
@@ -46,10 +50,17 @@ export async function GET(request: Request) {
             throw new Error(`GitHub API responded with status: ${response.status}`);
         }
         const data = await response.json();
-        const calendar = data?.data?.user?.contributionsCollection?.contributionCalendar;
+        const collection = data?.data?.user?.contributionsCollection;
+        const calendar = collection?.contributionCalendar;
         if (!calendar) {
             throw new Error('Invalid response from GitHub API');
         }
+        const totals = {
+            commits: collection?.totalCommitContributions ?? 0,
+            issues: collection?.totalIssueContributions ?? 0,
+            pullRequests: collection?.totalPullRequestContributions ?? 0,
+            reviews: collection?.totalPullRequestReviewContributions ?? 0,
+        };
         // All-time + yearly totals (one cheap query per year, cached 1h)
         const currentYear = new Date().getFullYear();
         const yearlyTotals: Record<number, number> = {};
@@ -81,7 +92,7 @@ export async function GET(request: Request) {
                 yearlyTotals[year] = 0;
             }
         }
-        return NextResponse.json({ ...calendar, yearlyTotals, allTimeTotal }, {
+        return NextResponse.json({ ...calendar, yearlyTotals, allTimeTotal, totals }, {
             headers: {
                 'Cache-Control': `public, max-age=${CACHE_TTL}, stale-while-revalidate=${CACHE_TTL * 24}`
             }

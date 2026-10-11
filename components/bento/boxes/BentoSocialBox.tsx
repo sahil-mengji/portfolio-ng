@@ -76,19 +76,19 @@ const SocialMediaLink = ({
   themed: boolean
 }) => (
   <div
-    className={`group/cell h-full flex-1 cursor-pointer overflow-hidden rounded-full border text-xl font-medium transition-[flex-grow,gap,max-width,opacity,transform] duration-[400ms] hover:flex-2 ${
+    className={`group/cell h-full flex-1 cursor-pointer overflow-hidden rounded-full border text-xl font-medium transition-[flex-grow,gap,max-width,opacity,transform] duration-[400ms] hover:flex-[1.5] ${
       themed ? "border-card-foreground/15 bg-card" : "border-black/10 bg-white"
     }`}
     onClick={() => window.open(href, "_blank")}
   >
     <div className="flex h-full w-full items-center justify-center gap-0 transition-[gap,opacity] duration-[400ms] group-hover/cell:gap-3">
       <Icon
-        size={24}
-        className={`shrink-0 transition-transform duration-300 group-hover/cell:scale-110 ${
+        size={38}
+        className={`shrink-0 opacity-65 transition-transform duration-300 group-hover/cell:scale-130 ${
           themed ? "" : "text-[#1f2328]"
         }`}
       />
-      <span
+      {/* <span
         className={`max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-[400ms] group-hover/cell:max-w-[200px] group-hover/cell:opacity-100 ${
           themed
             ? "text-card-foreground/80 group-hover/cell:text-card-foreground"
@@ -96,7 +96,7 @@ const SocialMediaLink = ({
         }`}
       >
         {label}
-      </span>
+      </span> */}
     </div>
   </div>
 )
