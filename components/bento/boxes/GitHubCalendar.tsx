@@ -48,7 +48,7 @@ export default function GitHubCalendar({ username }: { username: string }) {
   const sk = React.useMemo(() => {
     if (!isOverridden) return null
     const p = palette as any
-    const text: string = p.text ?? "#171717"
+    const text: string = p.cardText ?? "#171717"
     const surface: string = p.surface ?? "#ffffff"
     const tmix = (pct: number) =>
       `color-mix(in srgb, ${text} ${pct}%, transparent)`
@@ -62,37 +62,38 @@ export default function GitHubCalendar({ username }: { username: string }) {
 
   useEffect(() => {
     let cancelled = false
+    const emptyCalendar = () => {
+      // fallback: render empty heatmap so UI not stuck on skeleton
+      const today = new Date()
+      const weeks = Array.from({ length: 53 }, (_, wi) => ({
+        contributionDays: Array.from({ length: 7 }, (_, di) => {
+          const d = new Date(today)
+          d.setDate(today.getDate() - (52 - wi) * 7 - (6 - di))
+          return {
+            date: d.toISOString().split("T")[0],
+            contributionCount: 0,
+            contributionLevel: "NONE",
+          }
+        }),
+      }))
+      return { weeks, totalContributions: 0 }
+    }
     fetch(`/api/github-contributions?username=${username}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch contributions")
-        return res.json()
-      })
+      .then((res) => (res.ok ? res.json().catch(() => null) : null))
       .then((data) => {
         if (cancelled) return
         if (data && data.weeks) {
           setCalendarData(data)
         } else {
-          throw new Error("Invalid data")
+          // API/token unavailable — degrade quietly to an empty heatmap.
+          setError("unavailable")
+          setCalendarData(emptyCalendar())
         }
       })
-      .catch((err) => {
-        console.error("GitHub calendar error:", err)
+      .catch(() => {
         if (cancelled) return
-        setError(err.message)
-        // fallback: render empty heatmap so UI not stuck on skeleton
-        const today = new Date()
-        const weeks = Array.from({ length: 53 }, (_, wi) => ({
-          contributionDays: Array.from({ length: 7 }, (_, di) => {
-            const d = new Date(today)
-            d.setDate(today.getDate() - (52 - wi) * 7 - (6 - di))
-            return {
-              date: d.toISOString().split("T")[0],
-              contributionCount: 0,
-              contributionLevel: "NONE",
-            }
-          }),
-        }))
-        setCalendarData({ weeks, totalContributions: 0 })
+        setError("unavailable")
+        setCalendarData(emptyCalendar())
       })
 
     // Non-blocking: top repos from the public events stream.

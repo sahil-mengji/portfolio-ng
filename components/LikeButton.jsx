@@ -1,5 +1,7 @@
 "use client"
 import React, { useEffect, useRef, useState } from "react"
+import { ensureContrast } from "@/lib/color-utils"
+import { getBoxPalette } from "@/components/bento/box-palettes"
 import { cn } from "@/lib/utils"
 import { useThemeColorContext } from "@/components/theme-provider"
 
@@ -39,27 +41,11 @@ const LikeButton = ({ className }) => {
   // otherwise the mount effect would clobber storage with `false`.
   const synced = useRef(false)
 
-  // Picker theming: defaults below stay pixel-identical when idle; every
-  // element repaints from theme tokens only while overridden.
   const { palette, isOverridden } = useThemeColorContext()
-  const theme = !isOverridden
-    ? null
-    : (() => {
-        const p = palette || {}
-        const accent = p.brand || "#cf3333"
-        const text = p.text || "#171717"
-        const surface = p.surface || "#ffffff"
-        const tmix = (pct) => `color-mix(in srgb, ${text} ${pct}%, transparent)`
-        return {
-          heartLiked: accent,
-          heartIdle: `color-mix(in srgb, ${surface} 85%, transparent)`,
-          bgLiked: `color-mix(in srgb, ${accent} 30%, ${surface})`,
-          bgIdle: tmix(80),
-          border: tmix(45),
-          rippleLiked: `color-mix(in srgb, ${accent} 75%, transparent)`,
-          rippleIdle: tmix(55),
-        }
-      })()
+  const p = isOverridden ? palette : getBoxPalette("projects")
+  const idleFill = ensureContrast(p.brand, p.surface, 3)
+  const fill = isLiked ? p.cardText : idleFill
+  const heart = isLiked ? p.surface : ensureContrast(p.cardText, idleFill)
 
   useEffect(() => {
     setIsLiked(readLiked())
@@ -86,70 +72,45 @@ const LikeButton = ({ className }) => {
 
   return (
     <span className={cn("relative flex w-full justify-center", className)}>
-      {/* Ripples expand from behind the circle on every press */}
-      {ripples.map((id) => (
-        <span
-          key={id}
-          aria-hidden="true"
-          className={cn(
-            "pointer-events-none absolute inset-0 animate-ping rounded-full border-2",
-            isLiked ? "border-[#cf3333]/70" : "border-gray-500/60"
-          )}
-          style={
-            theme
-              ? {
-                  borderColor: isLiked ? theme.rippleLiked : theme.rippleIdle,
-                }
-              : undefined
-          }
-        />
-      ))}
       <button
         type="button"
         onClick={handleClick}
         aria-pressed={isLiked}
         aria-label={isLiked ? "Unlike" : "Like"}
         className={cn(
-          "relative aspect-square transform rounded-full border-2 border-black p-8 shadow-lg",
-          "transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
-          "hover:scale-110 hover:brightness-110",
-          "active:scale-95 active:brightness-90",
-          "focus:outline-none",
-          isLiked ? "bg-[#500606]" : "bg-[#313131]"
+          "relative aspect-square rounded-full border-2 p-8 shadow-lg",
+          "transition-[background-color,border-color,transform] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
+          "hover:scale-105 active:scale-95 motion-reduce:transform-none motion-reduce:transition-none",
+          "focus-visible:outline-2 focus-visible:outline-offset-4"
         )}
-        style={
-          theme
-            ? {
-                backgroundColor: isLiked ? theme.bgLiked : theme.bgIdle,
-                borderColor: theme.border,
-              }
-            : undefined
-        }
+        style={{
+          backgroundColor: fill,
+          borderColor: fill,
+          outlineColor: p.cardHeading,
+        }}
       >
-        <span className="grid grid-cols-10 gap-1">
+        {/* Ripples expand from behind the circle on every press */}
+        {ripples.map((id) => (
+          <span
+            key={id}
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 animate-ping rounded-full border-2 motion-reduce:animate-none"
+            style={{ borderColor: p.cardHeading }}
+          />
+        ))}
+        <span
+          className="relative z-10 grid grid-cols-10 gap-1"
+          style={{ width: 86 }}
+        >
           {heartGrid.map((row, rowIndex) => (
             <React.Fragment key={rowIndex}>
               {row.map((cell, cellIndex) => (
                 <span
                   key={`${rowIndex}-${cellIndex}`}
-                  className={cn(
-                    "h-[5px] w-[5px]",
-                    cell === 1
-                      ? isLiked
-                        ? "bg-[#cf3333]"
-                        : "bg-gray-500"
-                      : "bg-transparent",
-                    isLiked && cell === 1 && "animate-pulse"
-                  )}
-                  style={
-                    theme && cell === 1
-                      ? {
-                          backgroundColor: isLiked
-                            ? theme.heartLiked
-                            : theme.heartIdle,
-                        }
-                      : undefined
-                  }
+                  className="h-[5px] w-[5px] transition-colors duration-300 motion-reduce:transition-none"
+                  style={{
+                    backgroundColor: cell === 1 ? heart : "transparent",
+                  }}
                 />
               ))}
             </React.Fragment>

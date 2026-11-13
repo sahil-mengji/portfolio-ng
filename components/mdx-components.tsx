@@ -3,6 +3,33 @@ import type { MDXComponents } from "mdx/types"
 // NOTE: direct named imports only — this map is consumed by an RSC, where
 // `Text.X` member access on the client-module namespace is undefined.
 import { Heading, Body, Link } from "@/components/ui/text"
+import { Callout } from "@/components/callout"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Code } from "@/components/ui/typography"
+import { mdxCodeBlockComponents } from "@/components/mdx-code-block"
+import { CodeCollapsibleWrapper } from "@/components/code-collapsible-wrapper"
+import { CodeTabs } from "@/components/code-tabs"
+import { FramedImage, IframeEmbed, YouTubeEmbed } from "@/components/embed"
+import {
+  Tabs,
+  TabsContent,
+  TabsIndicator,
+  TabsList,
+  TabsTrigger,
+} from "@/components/base/ui/tabs"
+import { ComponentPreview } from "@/components/component-preview"
+import { ComponentSource } from "@/components/component-source"
+import { AutoTypeTable } from "@/components/auto-type-table"
+import { DocSponsors } from "@/components/doc-sponsors"
+import { Testimonial } from "@/components/testimonial"
+import { cn } from "@/lib/utils"
 
 // Plain-text extraction + slug for stable heading anchors (minimap targets).
 function headingText(node: React.ReactNode): string {
@@ -26,7 +53,13 @@ function headingSlug(children: React.ReactNode): string {
   return slug || "section"
 }
 
-function MdxLink({ href, children }: { href?: string; children?: React.ReactNode }) {
+function MdxLink({
+  href,
+  children,
+}: {
+  href?: string
+  children?: React.ReactNode
+}) {
   const external = !!href && /^https?:\/\//.test(href)
   return (
     <Link
@@ -38,76 +71,19 @@ function MdxLink({ href, children }: { href?: string; children?: React.ReactNode
   )
 }
 
-function MdxPre({ children }: { children?: React.ReactNode }) {
-  return (
-    <pre
-      className="overflow-x-auto rounded-xl border p-4 font-mono text-[13px] leading-relaxed"
-      style={{
-        background: "color-mix(in srgb, var(--surface, #f4f4f2) 70%, transparent)",
-        borderColor:
-          "color-mix(in srgb, var(--accent, #4f46e5) 22%, transparent)",
-      }}
-    >
-      {children}
-    </pre>
-  )
-}
-
-function MdxCode({ children }: { children?: React.ReactNode }) {
-  return (
-    <code
-      className="rounded-md px-1.5 py-0.5 font-mono text-[0.85em]"
-      style={{
-        background: "color-mix(in srgb, var(--accent, #4f46e5) 12%, transparent)",
-      }}
-    >
-      {children}
-    </code>
-  )
-}
-
 // Inline highlight usable as <Highlight>…</Highlight> inside MDX.
 function Highlight({ children }: { children?: React.ReactNode }) {
   return (
     <mark
       className="rounded px-1"
       style={{
-        background: "color-mix(in srgb, var(--accent, #4f46e5) 28%, transparent)",
+        background:
+          "color-mix(in srgb, var(--accent, #4f46e5) 28%, transparent)",
         color: "inherit",
       }}
     >
       {children}
     </mark>
-  )
-}
-
-// Callout box usable as <Callout title="…">…</Callout> inside MDX.
-function Callout({
-  title,
-  children,
-}: {
-  title?: string
-  children?: React.ReactNode
-}) {
-  return (
-    <aside
-      className="rounded-xl border border-l-4 p-4"
-      style={{
-        background: "color-mix(in srgb, var(--surface, #f4f4f2) 70%, transparent)",
-        borderColor:
-          "color-mix(in srgb, var(--accent, #4f46e5) 22%, transparent)",
-        borderLeftColor: "var(--accent, #4f46e5)",
-      }}
-    >
-      {title && (
-        <Body size="sm" className="mb-1 font-semibold">
-          {title}
-        </Body>
-      )}
-      <Body size="sm" className="opacity-90">
-        {children}
-      </Body>
-    </aside>
   )
 }
 
@@ -134,25 +110,23 @@ export const mdxComponents: MDXComponents = {
     </h3>
   ),
   h4: ({ children }) => (
-    <Body id={headingSlug(children)} className="mt-6 scroll-mt-28 font-semibold">
+    <Body
+      id={headingSlug(children)}
+      className="mt-6 scroll-mt-28 font-semibold"
+    >
       {children}
     </Body>
   ),
   p: ({ children }) => <Body className="leading-8 opacity-90">{children}</Body>,
   a: MdxLink as React.ComponentType<any>,
-  pre: MdxPre,
-  // Inline code only — fenced blocks arrive as <pre><code>, and the
-  // pre above carries the block styling. Unwrap to avoid double chips.
-  code: ({ children, className }: { children?: React.ReactNode; className?: string }) => {
-    const text = React.Children.toArray(children).join("")
-    const inBlock = typeof text === "string" && text.includes("\n")
-    if (inBlock || className) {
-      return <code className={className}>{children}</code>
-    }
-    return <MdxCode>{children}</MdxCode>
-  },
-  ul: ({ children }) => <ul className="list-inside list-disc space-y-1.5">{children}</ul>,
-  ol: ({ children }) => <ol className="list-inside list-decimal space-y-1.5">{children}</ol>,
+  ...mdxCodeBlockComponents,
+  code: Code,
+  ul: ({ children }) => (
+    <ul className="list-inside list-disc space-y-1.5">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="list-inside list-decimal space-y-1.5">{children}</ol>
+  ),
   li: ({ children }) => (
     <li>
       <Body as="span" size="sm" className="opacity-90">
@@ -165,39 +139,17 @@ export const mdxComponents: MDXComponents = {
       className="rounded-r-xl border-l-4 py-1 pl-4"
       style={{ borderLeftColor: "var(--accent, #4f46e5)" }}
     >
-      <Body size="sm" className="opacity-80 italic">
+      <Body size="sm" className="italic opacity-80">
         {children}
       </Body>
     </blockquote>
   ),
-  table: ({ children }) => (
-    <div className="overflow-x-auto rounded-xl border">
-      <table className="w-full border-collapse text-left text-sm">{children}</table>
-    </div>
-  ),
-  thead: ({ children }) => (
-    <thead
-      style={{
-        background: "color-mix(in srgb, var(--accent, #4f46e5) 12%, transparent)",
-      }}
-    >
-      {children}
-    </thead>
-  ),
-  th: ({ children }) => (
-    <th className="border-b px-4 py-2.5 font-semibold">
-      <Body as="span" size="sm" className="font-semibold">
-        {children}
-      </Body>
-    </th>
-  ),
-  td: ({ children }) => (
-    <td className="border-b px-4 py-2.5 align-top last:border-b-0">
-      <Body as="span" size="sm" className="opacity-90">
-        {children}
-      </Body>
-    </td>
-  ),
+  table: Table,
+  thead: TableHeader,
+  tbody: TableBody,
+  tr: TableRow,
+  th: TableHead,
+  td: TableCell,
   hr: () => (
     <hr
       className="border-t"
@@ -207,16 +159,54 @@ export const mdxComponents: MDXComponents = {
       }}
     />
   ),
-  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+  strong: ({ children }) => (
+    <strong className="font-semibold">{children}</strong>
+  ),
   em: ({ children }) => <em className="italic">{children}</em>,
   del: ({ children }) => <del className="opacity-60">{children}</del>,
   img: ({ src, alt }) => (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src ?? ""} alt={alt ?? ""} className="rounded-xl" loading="lazy" />
+    <img
+      src={src ?? ""}
+      alt={alt ?? ""}
+      className="rounded-xl"
+      loading="lazy"
+    />
   ),
   input: (props) => (
     <input {...props} readOnly className="mr-1.5 accent-current" />
   ),
   Highlight,
   Callout,
+  CodeCollapsibleWrapper,
+  CodeTabs,
+  Steps: (props: React.ComponentProps<"div">) => (
+    <div
+      className="md:ml-3.5 md:border-l md:pl-7.5 prose-h3:text-lg prose-h3:text-wrap"
+      {...props}
+    />
+  ),
+  Step: ({ className, ...props }: React.ComponentProps<"h3">) => (
+    <h3 className={cn("step font-medium", className)} {...props} />
+  ),
+  Tabs,
+  TabsList,
+  TabsIndicator,
+  TabsTrigger,
+  TabsContent,
+  TabsListInstallType: () => (
+    <TabsList>
+      <TabsTrigger value="cli">Command</TabsTrigger>
+      <TabsTrigger value="manual">Manual</TabsTrigger>
+      <TabsIndicator />
+    </TabsList>
+  ),
+  YouTubeEmbed,
+  IframeEmbed,
+  FramedImage,
+  ComponentPreview,
+  ComponentSource,
+  AutoTypeTable,
+  DocSponsors,
+  Testimonial,
 }

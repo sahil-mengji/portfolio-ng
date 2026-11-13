@@ -1,58 +1,55 @@
-"use client"
+import { Suspense } from "react"
 
-import { Link } from "next-view-transitions"
-import { Text, CardContext } from "@/components/ui/text"
+import {
+  PageHeading,
+  PageHeadingTagline,
+  PageHeadingTitle,
+} from "@/components/page-heading"
 import { SiteShell } from "@/components/site-shell"
-import { blogPosts } from "@/lib/dummy-data"
-import { rememberBlogReturn } from "@/lib/blog-return"
-import { defaultPalette } from "@/lib/color-utils"
+import { PostList } from "@/components/post-list"
+import { PostListWithSearch } from "@/components/post-list-with-search"
+import { PostSearchInput } from "@/components/post-search-input"
+import { getBlogPosts } from "@/lib/blog"
 
-const FB = defaultPalette
-const CARD_STYLE = {
-  background: `color-mix(in srgb, var(--surface, ${FB.surface}) 88%, transparent)`,
-  borderColor: `color-mix(in srgb, var(--accent, ${FB.brand}) 18%, transparent)`,
-  boxShadow: `0 1px 2px color-mix(in srgb, var(--accent, ${FB.brand}) 6%, transparent), 0 4px 12px color-mix(in srgb, var(--background, ${FB.primary}) 4%, transparent)`,
-} as const
+const title = "Blog"
+const description = "Writing about code, design, and everything in between."
+
+export const metadata = {
+  title,
+  description,
+  alternates: {
+    canonical: "/blogs",
+  },
+}
 
 export default function BlogsPage() {
+  const allPosts = getBlogPosts()
+
   return (
     <SiteShell showHatch={false}>
-      <div className="max-w-3xl space-y-8">
-        <Text.Heading>Blogs</Text.Heading>
-        <Text.Subheading>
-          Dummy posts — Instrument Serif subheadings
-        </Text.Subheading>
-        <div className="grid gap-4">
-          {blogPosts.map((post) => (
-            <CardContext.Provider key={post.slug} value={true}>
-              <Link
-                href={`/blogs/${post.slug}`}
-                onClick={rememberBlogReturn}
-                className="block rounded-2xl border p-5 backdrop-blur transition-transform hover:scale-[1.01] hover:opacity-95"
-                style={{ ...CARD_STYLE }}
-              >
-                <Text.Subheading
-                  as="h3"
-                  size="sm"
-                  className="!text-lg"
-                  style={{ viewTransitionName: `blog-title-${post.slug}` }}
-                >
-                  {post.title}
-                </Text.Subheading>
-                <Text.Body
-                  size="sm"
-                  className="mt-2 opacity-90"
-                  style={{ viewTransitionName: `blog-excerpt-${post.slug}` }}
-                >
-                  {post.excerpt}
-                </Text.Body>
-                <Text.Caption className="mt-3 block">
-                  {post.date} · {post.readingTime} · {post.tags.join(" · ")}
-                </Text.Caption>
-              </Link>
-            </CardContext.Provider>
-          ))}
+      <div className="min-h-svh">
+        <PageHeading>
+          <PageHeadingTagline>Blog</PageHeadingTagline>
+          <PageHeadingTitle>{title}</PageHeadingTitle>
+        </PageHeading>
+
+        <div className="h-4" />
+
+        <div className="screen-line-top screen-line-bottom p-2">
+          <Suspense
+            fallback={
+              <div className="flex h-9 w-full rounded-lg border border-input dark:bg-input/30" />
+            }
+          >
+            <PostSearchInput />
+          </Suspense>
         </div>
+
+        <Suspense fallback={<PostList posts={allPosts} />}>
+          <PostListWithSearch posts={allPosts} />
+        </Suspense>
+
+        <div className="h-4" />
       </div>
     </SiteShell>
   )

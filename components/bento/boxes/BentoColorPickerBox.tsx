@@ -1,493 +1,633 @@
 "use client"
-import { useState, useRef, useEffect, useCallback, useMemo } from "react"
+import {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  type PointerEvent,
+  type KeyboardEvent,
+} from "react"
 import { Wheel, hsvaToHex, hexToHsva, type HsvaColor } from "@uiw/react-color"
-import { Dices, Copy, Check, RotateCcw } from "lucide-react"
+import {
+  Dices,
+  Plus,
+  Minus,
+  Copy,
+  Check,
+  RotateCcw,
+  Sun,
+  Moon,
+  SlidersHorizontal,
+} from "lucide-react"
 import { HomeBox } from "@/components/bento/HomeBox"
 import { useThemeColorContext } from "@/components/theme-provider"
-import { getBoxPalette } from "@/components/bento/box-palettes"
-import { generateColorPalette, readableInkOn } from "@/lib/color-utils"
+import { requestHandAction } from "@/lib/theme-hand"
+import { playSfx, playDust, preloadSfx, SFX } from "@/lib/sound"
+import { harmonize, type ColorHarmony } from "@/lib/color-harmony"
+import { readableInkOn, generateColorPalette } from "@/lib/color-utils"
 
-function hexToRgba(hex: string, a: number) {
-  const h = hex.replace("#", "")
-  const f =
-    h.length === 3
-      ? h
-          .split("")
-          .map((c) => c + c)
-          .join("")
-      : h
-  const n = parseInt(f, 16)
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`
-}
-
-
+const PRESETS = [
+  { name: "Pearl", colors: ["#e8e3db", "#a3b4a0", "#b397ae"] },
+  { name: "Rose", colors: ["#eeb9c5", "#c88870", "#906ca9"] },
+  { name: "Dusk", colors: ["#b7a2db", "#e97fb7", "#efac85"] },
+  { name: "Citrus", colors: ["#e9df84", "#8fc58e", "#c88e69"] },
+  { name: "Lagoon", colors: ["#90d4ba", "#63acdc", "#9e86d4"] },
+  { name: "Orbit", colors: ["#98b4e8", "#b495d6", "#df92a8"] },
+  { name: "Graphite", colors: ["#25272d", "#8589ae", "#ac91bf"] },
+]
+const names = ["Page", "Cards", "Accent"]
 export function BentoColorPickerBox() {
-  const { updatePalette, commitPalette, flushPalette, isOverridden, palette: universalPalette, defaultColor } = useThemeColorContext()
-  const palette = !isOverridden
-    ? (getBoxPalette("colorpicker") ?? universalPalette)
-    : universalPalette
-  // HSVA state drives the package Wheel; theme applies only on user interaction
-  const [hsva, setHsva] = useState<HsvaColor>({ h: 0, s: 0, v: 100, a: 1 })
-
-  const arcWrapRef = useRef<HTMLDivElement>(null)
-  const wheelWrapRef = useRef<HTMLDivElement>(null)
-  const [arcSize, setArcSize] = useState(200)
-  const [isDraggingArc, setIsDraggingArc] = useState(false)
-
-  // --- Interaction model: this block stays live via local hsva state on
-  // every move; the whole site follows through a debounced commit with a
-  // circular reveal growing from the color wheel (see ThemeProvider). ---
-  const hsvaRef = useRef(hsva)
-  useEffect(() => {
-    hsvaRef.current = hsva
-  }, [hsva])
-
-  const currentHex = hsvaToHex(hsva)
-  // Live card chrome: once touched, the card surfaces follow the selected
-  // color instantly instead of waiting for the debounced site commit.
-  const [touched, setTouched] = useState(false)
-  const livePalette = useMemo(() => generateColorPalette(currentHex), [currentHex])
-  // Card bg carries a clearly visible wash of the pick (not the subtle
-  // surface tint), applied the same frame — never waiting for the reveal.
-  const liveWash = `color-mix(in oklab, ${currentHex} 32%, ${livePalette.surface})`
-  // The wheel always previews at full brightness: lightness lives only on
-  // the arc + state, never dimming the wheel disc itself.
-  const wheelDisplay: HsvaColor = { ...hsva, v: 100 }
-
-  // --- Random-color dial animation (rAF, cancelled by any manual input) ---
-  const animRef = useRef(0)
-  const cancelAnim = useCallback(() => {
-    if (animRef.current) {
-      cancelAnimationFrame(animRef.current)
-      animRef.current = 0
-    }
-  }, [])
-  useEffect(() => {
-    return () => {
-      if (animRef.current) cancelAnimationFrame(animRef.current)
-    }
-  }, [])
-
-  // Commit any pending debounced theme on drag release (reveal from wheel).
-  useEffect(() => {
-    const onUp = () => flushPalette(wheelWrapRef.current)
-    window.addEventListener("pointerup", onUp)
-    return () => window.removeEventListener("pointerup", onUp)
-  }, [flushPalette])
-
-  // Measure the square arc area so wheel + arc stay in sync at any cell width
-  useEffect(() => {
-    if (!arcWrapRef.current) return
-    const ro = new ResizeObserver(([e]) =>
-      setArcSize(Math.max(140, e.contentRect.width))
+  const {
+    color,
+    secondaryColor,
+    tertiaryColor,
+    commitPalette,
+    resetPalette,
+    isOverridden,
+  } = useThemeColorContext()
+  const savedHarmony: ColorHarmony = "analogous"
+  const [harmony, setHarmony] = useState<ColorHarmony>(savedHarmony)
+  const [tones, setTones] = useState(() =>
+    harmonize(
+      hexToHsva(color),
+      savedHarmony,
+      tertiaryColor ? 3 : secondaryColor ? 2 : 1
     )
-    ro.observe(arcWrapRef.current)
-    return () => ro.disconnect()
+  )
+  const [count, setCount] = useState(tertiaryColor ? 3 : secondaryColor ? 2 : 1)
+  const selected = 0
+  const [size, setSize] = useState(230)
+  const [copied, setCopied] = useState(false)
+  const [previewing, setPreviewing] = useState(false)
+  const livePalette = useMemo(
+    () =>
+      generateColorPalette(
+        hsvaToHex(tones[0]),
+        count > 1 ? hsvaToHex(tones[1]) : null,
+        count > 2 ? hsvaToHex(tones[2]) : null
+      ),
+    [tones, count]
+  )
+  const wrap = useRef<HTMLDivElement>(null),
+    wheel = useRef<HTMLDivElement>(null)
+  const animation = useRef(0)
+  const generation = useRef(0)
+  const [animating, setAnimating] = useState(false)
+  const cancelAnimation = () => {
+    generation.current++
+    cancelAnimationFrame(animation.current)
+    animation.current = 0
+    setAnimating(false)
+  }
+  const drag = useRef<"arc" | "wheel" | "slider" | number | null>(null)
+  useEffect(() => {
+    preloadSfx([SFX.snap, SFX.reverse, ...SFX.dust])
+    return () => cancelAnimationFrame(animation.current)
   }, [])
-
-  // NOTE: no mount effect here — both the arc drag (handleArcMove) and the
-  // Wheel onChange already apply the theme directly, so applying on mount
-  // would override the default white theme before any user interaction.
-
-  // --- Arc geometry: 144° (2/5 of circumference) centered at the bottom ---
-  // moon (v=0) at 162° (lower-left) → sun (v=100) at 18° (lower-right)
-  const ARC_END_SUN = 18
-  const ARC_END_MOON = 162
-  const cx = arcSize / 2
-  const cy = arcSize / 2
-  // Fully relative geometry — wheel, arc, icons never overlap at any width
-  const STROKE = 16
-  const iconOrbit = arcSize / 2 - 10
-  const arcR = iconOrbit - 8 - 4 - STROKE / 2
-  const wheelPx = Math.max(40, 2 * (arcR - STROKE / 2 - 11))
-  // Rounded to 3 decimals: sin/cos can differ 1 ulp between server and
-  // client engines → hydration mismatch in path/position attributes.
-  const polar = useCallback(
-    (deg: number, radius: number = arcR) => {
-      const rad = (deg * Math.PI) / 180
-      const r3 = (n: number) => Math.round(n * 1000) / 1000
-      return { x: r3(cx + radius * Math.cos(rad)), y: r3(cy + radius * Math.sin(rad)) }
-    },
-    [cx, cy, arcR]
-  )
-  // Value 0 at moon (162°), value 100 at sun (18°)
-  const thumbAngle = ARC_END_MOON - (hsva.v / 100) * (ARC_END_MOON - ARC_END_SUN)
-  const thumbPos = polar(thumbAngle)
-  const sunPos = polar(ARC_END_SUN)
-  const moonPos = polar(ARC_END_MOON)
-  // Track from sun (18°) to moon (162°) through the bottom (sweep-flag=1)
-  const arcTrack = `M ${sunPos.x} ${sunPos.y} A ${arcR} ${arcR} 0 0 1 ${moonPos.x} ${moonPos.y}`
-  // Fill from moon (162°) to thumb (sweep-flag=0)
-  const arcFill = `M ${moonPos.x} ${moonPos.y} A ${arcR} ${arcR} 0 0 0 ${polar(thumbAngle).x} ${polar(thumbAngle).y}`
-  // Sun/moon icons sit on the horizontal diameter, tucked very slightly
-  // inside the icon orbit
-  const iconR = iconOrbit - 4
-  const sunIconPos = polar(0, iconR)
-  const moonIconPos = polar(180, iconR)
-  // Card-relative track — auto-contrasts the live card surface
-  const trackStroke = hexToRgba(touched ? livePalette.cardText : palette.cardText, 0.45)
-  // Ring the icon matching the current extreme (dark → moon, bright → sun)
-  const atSun = hsva.v >= 99
-  const atMoon = hsva.v <= 1
-
-  // --- Pointer → arc angle → value (clamped to the 144° arc) ---
-  // Stable: reads hue/sat from ref so listener never resubscribes per tick.
-  // Any manual grab cancels the dice sweep.
-  const handleArcMove = useCallback(
-    (clientX: number, clientY: number) => {
-      if (!arcWrapRef.current) return
-      cancelAnim()
-      const rect = arcWrapRef.current.getBoundingClientRect()
-      const dx = clientX - (rect.left + rect.width / 2)
-      const dy = clientY - (rect.top + rect.height / 2)
-      let a = (Math.atan2(dy, dx) * 180) / Math.PI
-      a = ((a % 360) + 360) % 360
-      // Clamp to 18°–162° (below that → sun end, above → moon end)
-      let v: number
-      if (a >= ARC_END_MOON && a <= 270) v = 0
-      else if (a > 270 || a < ARC_END_SUN) v = 100
-      else v = ((ARC_END_MOON - a) / (ARC_END_MOON - ARC_END_SUN)) * 100
-      const next = { ...hsvaRef.current, v }
-      hsvaRef.current = next
-      setHsva(next)
-      setTouched(true)
-      updatePalette(hsvaToHex(next), wheelWrapRef.current)
-    },
-    [cancelAnim, updatePalette, ARC_END_MOON, ARC_END_SUN]
-  )
-
-  // --- Random color (dice): dials, readouts, card bg all travel together on
-  // the same hsva state, so everything stays in sync frame-to-frame; the
-  // site theme commits once on landing. ---
-  const randomize = useCallback(
-    (origin: Element | null = null, quiet = false) => {
-      cancelAnim()
-      const from = hsvaRef.current
-      const target: HsvaColor = {
-        h: Math.floor(Math.random() * 360),
+  const current = useRef({ tones, count, selected, harmony })
+  current.current = { tones, count, selected, harmony }
+  const committed = useRef({ color, secondaryColor, tertiaryColor })
+  committed.current = { color, secondaryColor, tertiaryColor }
+  useEffect(() => {
+    cancelAnimation()
+    const n = tertiaryColor ? 3 : secondaryColor ? 2 : 1
+    let rule = current.current.harmony
+    try {
+      const saved = localStorage.getItem("portfolio-color-harmony")
+      if (
+        saved &&
+        [
+          "analogous",
+          "complementary",
+          "split-complementary",
+          "triadic",
+        ].includes(saved)
+      )
+        rule = saved as ColorHarmony
+    } catch {}
+    setHarmony(rule)
+    setTones(harmonize(hexToHsva(color), rule, n))
+    setPreviewing(false)
+    setCount(tertiaryColor ? 3 : secondaryColor ? 2 : 1)
+  }, [color, secondaryColor, tertiaryColor])
+  useEffect(() => {
+    if (!wrap.current) return
+    const observer = new ResizeObserver(([e]) =>
+      setSize(
+        Math.max(120, Math.min(e.contentRect.width, e.contentRect.height))
+      )
+    )
+    observer.observe(wrap.current)
+    return () => observer.disconnect()
+  }, [])
+  const apply = (
+    next = current.current.tones,
+    n = current.current.count,
+    origin: Element | null = wheel.current
+  ) => {
+    cancelAnimation()
+    const colors = next.map(hsvaToHex),
+      second = n > 1 ? colors[1] : null,
+      third = n > 2 ? colors[2] : null,
+      old = committed.current
+    if (
+      colors[0] !== old.color ||
+      second !== old.secondaryColor ||
+      third !== old.tertiaryColor
+    )
+      commitPalette(colors[0], origin, second, third)
+  }
+  const preview = (tone: HsvaColor, index = current.current.selected) => {
+    cancelAnimation()
+    setPreviewing(true)
+    const next = harmonize(tone, current.current.harmony, current.current.count)
+    current.current.tones = next
+    setTones(next)
+  }
+  const applyRef = useRef(apply)
+  applyRef.current = apply
+  useEffect(() => {
+    const finish = () => {
+      if (drag.current === null) return
+      drag.current = null
+      applyRef.current()
+    }
+    window.addEventListener("pointerup", finish)
+    window.addEventListener("pointercancel", finish)
+    return () => {
+      window.removeEventListener("pointerup", finish)
+      window.removeEventListener("pointercancel", finish)
+    }
+  }, [])
+  const randomize = (origin: Element) => {
+    cancelAnimation()
+    setPreviewing(true)
+    const from = current.current.tones.map((t) => ({ ...t }))
+    const n = current.current.count
+    const rule = current.current.harmony
+    const target = harmonize(
+      {
+        ...from[0],
+        h: Math.random() * 360,
         s: 55 + Math.random() * 40,
         v: 65 + Math.random() * 35,
-        a: 1,
-      }
-      // Gauntlet owns sounds + the reveal mask: it commits this exact
-      // target from the corner while the dials sweep here.
-      if (quiet) {
-        window.dispatchEvent(
-          new CustomEvent("gauntlet:play", {
-            detail: { kind: "snap", hex: hsvaToHex(target) },
-          })
-        )
-      }
-      // Shortest path around the hue ring
-      const dh = ((target.h - from.h + 540) % 360) - 180
-      const ds = target.s - from.s
-      const dv = target.v - from.v
-      const el = origin ?? wheelWrapRef.current
-      const dur = 650
-      const t0 = performance.now()
-      setTouched(true)
-      const step = (now: number) => {
-        const t = Math.min(1, (now - t0) / dur)
-        // easeInOutCubic
-        const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
-        const next: HsvaColor = {
-          h: (from.h + dh * e + 360) % 360,
-          s: from.s + ds * e,
-          v: from.v + dv * e,
-          a: 1,
-        }
-        hsvaRef.current = next
-        setHsva(next)
-        if (t < 1) {
-          animRef.current = requestAnimationFrame(step)
-        } else {
-          animRef.current = 0
-          // Site commit exactly on landing — unless the gauntlet owns it
-          // (quiet bento taps commit from the corner instead).
-          if (!quiet) commitPalette(hsvaToHex(next), el)
-        }
-      }
-      animRef.current = requestAnimationFrame(step)
-    },
-    [cancelAnim, commitPalette]
-  )
-
-  // --- Copy hex to clipboard ---
-  const [copied, setCopied] = useState(false)
-  const copyHex = useCallback(async () => {
+      },
+      rule,
+      n
+    )
+    const token = generation.current
+    let handReady = false,
+      dialReady = false
+    const commit = () => {
+      if (token === generation.current && handReady && dialReady)
+        applyRef.current(target, n, origin)
+    }
+    const remote = requestHandAction({
+      kind: "snap",
+      duration: 650,
+      onCommit: () => {
+        handReady = true
+        commit()
+      },
+    })
+    if (!remote) {
+      handReady = true
+      playSfx(SFX.snap)
+    }
+    const finish = () => {
+      animation.current = 0
+      setAnimating(false)
+      current.current.tones = target
+      setTones(target)
+      dialReady = true
+      if (!remote) playDust()
+      commit()
+    }
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      finish()
+      return
+    }
+    const started = performance.now()
+    setAnimating(true)
+    const step = (now: number) => {
+      const t = Math.min(1, (now - started) / 650)
+      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+      const tone = from[0],
+        destination = target[0]
+      const dh = ((destination.h - tone.h + 540) % 360) - 180
+      const next = harmonize(
+        {
+          ...tone,
+          h: (tone.h + dh * eased + 360) % 360,
+          s: tone.s + (destination.s - tone.s) * eased,
+          v: tone.v + (destination.v - tone.v) * eased,
+        },
+        rule,
+        n
+      )
+      current.current.tones = next
+      setTones(next)
+      if (t < 1) animation.current = requestAnimationFrame(step)
+      else finish()
+    }
+    animation.current = requestAnimationFrame(step)
+  }
+  const picked = tones[selected],
+    currentHex = hsvaToHex(picked),
+    radius = size * 0.49,
+    disc = size * 0.72,
+    center = size / 2
+  const polar = (angle: number, r = radius) => ({
+    x: center + r * Math.cos((angle * Math.PI) / 180),
+    y: center + r * Math.sin((angle * Math.PI) / 180),
+  })
+  const start = polar(18),
+    end = polar(162),
+    thumb = polar(162 - picked.v * 1.44)
+  const moveArc = (event: PointerEvent) => {
+    if (!wrap.current) return
+    const box = wrap.current.getBoundingClientRect()
+    let a =
+      (Math.atan2(
+        event.clientY - box.top - box.height / 2,
+        event.clientX - box.left - box.width / 2
+      ) *
+        180) /
+      Math.PI
+    a = (a + 360) % 360
+    const v = a > 270 || a < 18 ? 100 : a > 162 ? 0 : (162 - a) / 1.44
+    preview({ ...current.current.tones[current.current.selected], v })
+  }
+  const movePoint = (event: PointerEvent, index: number) => {
+    if (!wheel.current) return
+    const box = wheel.current.getBoundingClientRect(),
+      dx = event.clientX - box.left - box.width / 2,
+      dy = event.clientY - box.top - box.height / 2
+    preview(
+      {
+        ...current.current.tones[index],
+        h: (180 - (Math.atan2(dy, dx) * 180) / Math.PI + 360) % 360,
+        s: Math.min(100, (Math.hypot(dx, dy) / (box.width / 2)) * 100),
+      },
+      index
+    )
+  }
+  const keyPoint = (event: KeyboardEvent, index: number) => {
+    if (
+      !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)
+    )
+      return
+    event.preventDefault()
+    const tone = { ...tones[index] },
+      step = event.shiftKey ? 10 : 2
+    if (event.key === "ArrowLeft") tone.h = (tone.h - step + 360) % 360
+    if (event.key === "ArrowRight") tone.h = (tone.h + step) % 360
+    if (event.key === "ArrowUp") tone.s = Math.min(100, tone.s + step)
+    if (event.key === "ArrowDown") tone.s = Math.max(0, tone.s - step)
+    preview(tone, index)
+    apply()
+  }
+  const changeHarmony = (rule: ColorHarmony, n = current.current.count) => {
+    cancelAnimation()
+    setPreviewing(true)
     try {
-      await navigator.clipboard.writeText(currentHex)
-    } catch {
-      const ta = document.createElement("textarea")
-      ta.value = currentHex
-      document.body.appendChild(ta)
-      ta.select()
-      document.execCommand("copy")
-      ta.remove()
+      localStorage.setItem("portfolio-color-harmony", rule)
+    } catch {}
+    const next = harmonize(current.current.tones[0], rule, n)
+    setHarmony(rule)
+    setCount(n)
+    setTones(next)
+    current.current = {
+      ...current.current,
+      harmony: rule,
+      count: n,
+      tones: next,
     }
-    setCopied(true)
-    window.setTimeout(() => setCopied(false), 1200)
-  }, [currentHex])
-
-  // --- Pointer Event Listeners (arc only – Wheel handles its own drag) ---
-  useEffect(() => {
-    const onPointerMove = (e: PointerEvent) => {
-      if (isDraggingArc) handleArcMove(e.clientX, e.clientY)
-    }
-
-    const onPointerUp = () => {
-      setIsDraggingArc(false)
-      flushPalette(wheelWrapRef.current)
-    }
-
-    if (isDraggingArc) {
-      window.addEventListener("pointermove", onPointerMove)
-      window.addEventListener("pointerup", onPointerUp)
-    }
-    return () => {
-      window.removeEventListener("pointermove", onPointerMove)
-      window.removeEventListener("pointerup", onPointerUp)
-    }
-  }, [isDraggingArc, handleArcMove, flushPalette])
-
-  // (ResizeObserver above is the single source for arcSize — duplicate removed.)
-
-  // Follow gauntlet commits (corner taps or bento-remote): swing the dials
-  // to the committed color so the selector card mirrors the site theme.
-  // No commit loop — setting dial state alone never commits.
-  useEffect(() => {
-    const onTheme = (e: Event) => {
-      const hex = (e as CustomEvent).detail?.hex as string | undefined
-      if (!hex) return
-      cancelAnim()
-      const next = hexToHsva(hex)
-      hsvaRef.current = next
-      setHsva(next)
-      setTouched(hex.toLowerCase() !== defaultColor.toLowerCase())
-    }
-    window.addEventListener("theme:committed", onTheme)
-    return () => window.removeEventListener("theme:committed", onTheme)
-  }, [cancelAnim, defaultColor])
-
+    apply(next, n)
+  }
+  const changeCount = (n: number) =>
+    changeHarmony(current.current.harmony, Math.min(3, Math.max(1, n)))
+  const brightness = (v: number) => {
+    preview({ ...picked, v })
+    apply()
+  }
   return (
     <HomeBox
       boxKey="colorpicker"
       outerClassName="bento-colorpicker h-full w-full"
-      className="flex flex-col justify-center p-3"
-      liveSurface={touched ? liveWash : undefined}
+      className="relative flex flex-col gap-2 p-3"
+      livePalette={previewing || isOverridden ? livePalette : undefined}
     >
-      {/* Clean picker device - card bg only, no dark panel */}
-      <div
-        className="flex h-full w-full flex-col gap-2 rounded-[18px] p-3 select-none"
-        style={
-          touched
-            ? ({
-                color: livePalette.cardText,
-                ["--card-text" as any]: livePalette.cardText,
-                ["--card-muted" as any]: livePalette.cardSecondaryText,
-                ["--card-foreground" as any]: livePalette.cardText,
-              } as any)
-            : undefined
-        }
-      >
-        <div className="flex items-center justify-between px-1">
-          {/* <span className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">
-            Theme picker
-          </span> */}
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={copyHex}
-              aria-label="Copy color code"
-              title="Copy color code"
-              className="flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-xs transition-[transform,opacity] hover:opacity-85 active:scale-95"
-              style={{
-                background: currentHex,
-                color: readableInkOn(currentHex),
-                borderColor: hexToRgba(readableInkOn(currentHex), 0.25),
-              }}
-            >
-              {copied ? <Check size={13} /> : <Copy size={13} />}
-              {currentHex.toUpperCase()}
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                cancelAnim()
-                setTouched(false)
-                // Snap the dials home; the gauntlet owns the reset reveal +
-                // sound from the corner.
-                const home = hexToHsva(defaultColor)
-                hsvaRef.current = home
-                setHsva(home)
-                window.dispatchEvent(
-                  new CustomEvent("gauntlet:play", { detail: "reverse" })
-                )
-              }}
-              disabled={!isOverridden}
-              title="Reset theme"
-              aria-label="Reset theme"
-              className="grid h-14 w-14 place-items-center rounded-full border-2 text-card-foreground transition-[transform,opacity] hover:scale-105 active:scale-95 disabled:opacity-30"
-              style={{
-                borderColor: hexToRgba(currentHex, 0.5),
-                color: touched ? livePalette.cardText : undefined,
-              }}
-            >
-              <RotateCcw size={24} />
-            </button>
-            <button
-              onClick={(e) => randomize(e.currentTarget, true)}
-              aria-label="Random color"
-              title="Random color"
-              className="grid h-14 w-14 place-items-center rounded-full transition-[transform,opacity] hover:scale-105 hover:opacity-85 active:scale-95"
-              style={{ background: currentHex, color: readableInkOn(currentHex) }}
-            >
-              <Dices size={24} />
-            </button>
-          </div>
-        </div>
-
-        {/* Wheel + semicircular lightness arc */}
-        <div className="flex min-h-[200px] flex-1 items-center justify-center">
-          <div
-            ref={arcWrapRef}
-            onPointerDown={(e) => {
-              // Wheel handles its own drags — a hue click must not reset lightness
-              if (wheelWrapRef.current?.contains(e.target as Node)) return
-              setIsDraggingArc(true)
-              handleArcMove(e.clientX, e.clientY)
+      <div className="flex items-center justify-between gap-2">
+        <button
+          aria-label="Copy color code"
+          title={`${names[selected]} color`}
+          className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[11px]"
+          style={{
+            background: currentHex,
+            color: readableInkOn(currentHex),
+            borderColor: readableInkOn(currentHex),
+          }}
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(currentHex)
+              setCopied(true)
+              setTimeout(() => setCopied(false), 1200)
+            } catch {
+              setCopied(false)
+            }
+          }}
+        >
+          {copied ? <Check size={12} /> : <Copy size={12} />}{" "}
+          {currentHex.toUpperCase()}
+        </button>
+        <div className="flex gap-2">
+          <button
+            aria-label="Reset theme"
+            title="Reset theme"
+            disabled={!isOverridden}
+            data-silent-tap
+            onClick={(e) => {
+              cancelAnimation()
+              const token = generation.current
+              if (
+                !requestHandAction({
+                  kind: "reverse",
+                  onCommit: () => {
+                    if (token === generation.current) resetPalette()
+                  },
+                })
+              ) {
+                playSfx(SFX.reverse)
+                resetPalette(e.currentTarget)
+              }
             }}
-            className="relative aspect-square w-full max-w-[300px] cursor-pointer touch-none"
+            className="grid size-11 place-items-center rounded-full border text-card-foreground disabled:opacity-30"
           >
-            {/* Package Wheel, centered */}
-            <div
-              ref={wheelWrapRef}
-              data-wheel
-              className="absolute"
-              style={{
-                width: wheelPx,
-                height: wheelPx,
-                left: cx - wheelPx / 2,
-                top: cy - wheelPx / 2,
+            <RotateCcw size={21} />
+          </button>
+          <button
+            aria-label="Random color"
+            title="Random colors"
+            className="grid size-11 place-items-center rounded-full"
+            style={{ background: currentHex, color: readableInkOn(currentHex) }}
+            data-silent-tap
+            data-random-animating={animating}
+            onClick={(e) => randomize(e.currentTarget)}
+          >
+            <Dices size={23} />
+          </button>
+        </div>
+      </div>
+      <div
+        ref={wrap}
+        className="relative flex min-h-0 flex-1 items-center justify-center"
+      >
+        <div
+          className="relative shrink-0"
+          style={{ width: size, height: size }}
+        >
+          <svg
+            viewBox={`0 0 ${size} ${size}`}
+            className="absolute inset-0 h-full w-full"
+            aria-hidden="true"
+          >
+            <path
+              d={`M ${start.x} ${start.y} A ${radius} ${radius} 0 0 1 ${end.x} ${end.y}`}
+              fill="none"
+              stroke="var(--card-foreground)"
+              strokeOpacity=".25"
+              strokeWidth="18"
+              strokeLinecap="round"
+            />
+            <path
+              d={`M ${end.x} ${end.y} A ${radius} ${radius} 0 0 0 ${thumb.x} ${thumb.y}`}
+              fill="none"
+              stroke={currentHex}
+              strokeWidth="18"
+              strokeLinecap="round"
+            />
+            <path
+              d={`M ${start.x} ${start.y} A ${radius} ${radius} 0 0 1 ${end.x} ${end.y}`}
+              fill="none"
+              stroke="transparent"
+              strokeWidth="40"
+              className="cursor-pointer touch-none"
+              onPointerDown={(e) => {
+                drag.current = "arc"
+                e.currentTarget.setPointerCapture(e.pointerId)
+                moveArc(e)
               }}
-            >
-              <Wheel
-                width={wheelPx}
-                height={wheelPx}
-                color={wheelDisplay}
-                pointer={({ style, color }: { style?: React.CSSProperties; color?: string }) => (
-                  <div
-                    style={{
-                      ...style,
-                      width: 26,
-                      height: 26,
-                      // style.transform already carries translate(x, y);
-                      // recenter the bigger box on that point.
-                      transform: `${style?.transform ?? ""} translate(-13px, -13px)`,
-                      borderRadius: "50%",
-                      background: "#fff",
-                      boxShadow:
-                        "0 2px 8px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(0,0,0,0.2)",
-                      pointerEvents: "none",
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: "absolute",
-                        inset: 4,
-                        borderRadius: "50%",
-                        background: color,
-                      }}
-                    />
-                  </div>
-                )}
-                onChange={(color) => {
-                  // Manual grab cancels the dice sweep; wheel edits hue/sat
-                  // only — the arc keeps its lightness.
-                  cancelAnim()
-                  const next = { ...color.hsva, v: hsvaRef.current.v }
-                  setHsva(next)
-                  hsvaRef.current = next
-                  setTouched(true)
-                  updatePalette(hsvaToHex(next), wheelWrapRef.current)
-                }}
-              />
-            </div>
-
-            {/* Arc track (semicircle under the wheel) */}
-            <svg
-              className="pointer-events-none absolute inset-0 h-full w-full"
-              viewBox={`0 0 ${arcSize} ${arcSize}`}
-            >
-              <path
-                d={arcTrack}
-                fill="none"
-                stroke={trackStroke}
-                strokeWidth="16"
-                strokeLinecap="round"
-              />
-              <path
-                d={arcFill}
-                fill="none"
-                stroke={currentHex}
-                strokeWidth="16"
-                strokeLinecap="round"
-              />
-            </svg>
-
-            {/* Arc thumb — live local color with contrast rings for any background */}
-            <div
-              data-thumb
-              className="pointer-events-none absolute h-5 w-5 rounded-full"
-              style={{
-                left: thumbPos.x,
-                top: thumbPos.y,
-                transform: "translate(-50%, -50%)",
-                background: currentHex,
-                boxShadow: "0 0 0 2px #fff, 0 0 0 4px rgba(0,0,0,0.45)",
+              onPointerMove={(e) => {
+                if (drag.current === "arc") moveArc(e)
               }}
             />
-
-            {/* Sun at bright end of the wheel diameter */}
-            <svg
-              className={`pointer-events-none absolute h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full p-1 text-card-foreground ${atSun ? "ring-2 ring-current" : ""}`}
-              style={{
-                left: sunIconPos.x,
-                top: sunIconPos.y,
-                background: hexToRgba(touched ? livePalette.cardText : palette.cardText, 0.14),
+          </svg>
+          <div
+            ref={wheel}
+            className="absolute"
+            style={{
+              width: disc,
+              height: disc,
+              left: (size - disc) / 2,
+              top: (size - disc) / 2,
+            }}
+          >
+            <Wheel
+              width={disc}
+              height={disc}
+              color={{ ...picked, v: 100 }}
+              pointer={() => null}
+              onChange={(value) => {
+                drag.current = "wheel"
+                preview({
+                  ...value.hsva,
+                  v: current.current.tones[current.current.selected].v,
+                })
               }}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-              />
-            </svg>
-            {/* Moon at dark end of the wheel diameter */}
-            <svg
-              className={`pointer-events-none absolute h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full p-1 text-card-foreground ${atMoon ? "ring-2 ring-current" : ""}`}
-              style={{
-                left: moonIconPos.x,
-                top: moonIconPos.y,
-                background: hexToRgba(touched ? livePalette.cardText : palette.cardText, 0.14),
-              }}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-              />
-            </svg>
+            />
+            {tones.slice(0, count).map((tone, index) => {
+              const a = ((180 - tone.h) * Math.PI) / 180
+              return (
+                <button
+                  key={index}
+                  aria-label={`${names[index]} color point`}
+                  data-hue={tone.h}
+                  data-saturation={tone.s}
+                  tabIndex={index === 0 ? 0 : -1}
+                  aria-disabled={index !== 0}
+                  aria-pressed={selected === index}
+                  title={
+                    index === 0
+                      ? "Main color · drag or use arrow keys"
+                      : `Linked ${names[index].toLowerCase()} · ${harmony}`
+                  }
+                  className="absolute size-6 -translate-x-1/2 -translate-y-1/2 touch-none rounded-full border-[3px] border-white"
+                  style={{
+                    width: index === 0 ? 34 : 24,
+                    height: index === 0 ? 34 : 24,
+                    left:
+                      disc / 2 + (((tone.s / 100) * disc) / 2) * Math.cos(a),
+                    top: disc / 2 + (((tone.s / 100) * disc) / 2) * Math.sin(a),
+                    background: hsvaToHex(tone),
+                    boxShadow:
+                      selected === index
+                        ? "0 0 0 2px #2229,0 2px 8px #0005"
+                        : "0 0 0 1px #2229",
+                    zIndex: selected === index ? 3 : 2,
+                    pointerEvents: index === 0 ? "auto" : "none",
+                  }}
+                  onKeyDown={(e) => keyPoint(e, index)}
+                  onPointerDown={(e) => {
+                    e.stopPropagation()
+                    current.current.selected = index
+                    drag.current = index
+                    e.currentTarget.setPointerCapture(e.pointerId)
+                  }}
+                  onPointerMove={(e) => {
+                    if (drag.current === index) movePoint(e, index)
+                  }}
+                />
+              )
+            })}
           </div>
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute size-6 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{
+              left: thumb.x,
+              top: thumb.y,
+              background: currentHex,
+              boxShadow: "0 0 0 2px #fff,0 0 0 4px #0007",
+            }}
+          />
+          <button
+            aria-label="Dark brightness"
+            title="Dark"
+            className="absolute top-1/2 -left-8 grid size-8 -translate-y-1/2 place-items-center rounded-full text-card-foreground"
+            onClick={() => brightness(25)}
+          >
+            <Moon size={18} />
+          </button>
+          <button
+            aria-label="Light brightness"
+            title="Light"
+            className="absolute top-1/2 -right-8 grid size-8 -translate-y-1/2 place-items-center rounded-full text-card-foreground"
+            onClick={() => brightness(100)}
+          >
+            <Sun size={18} />
+          </button>
         </div>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            aria-label="Remove color"
+            title="Remove color"
+            disabled={count === 1}
+            onClick={() => changeCount(count - 1)}
+            className="grid size-8 place-items-center rounded-full border disabled:opacity-30"
+          >
+            <Minus size={14} />
+          </button>
+          <span
+            aria-live="polite"
+            className="font-mono text-[10px] tabular-nums"
+          >
+            {count}
+          </span>
+          <button
+            aria-label="Add color"
+            title="Add color"
+            disabled={count === 3}
+            onClick={() => changeCount(count + 1)}
+            className="grid size-8 place-items-center rounded-full border disabled:opacity-30"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+        <details className="group/tune relative">
+          <summary
+            aria-label="Color presets and adjustments"
+            title="Presets and adjustments"
+            className="grid size-8 cursor-pointer list-none place-items-center rounded-full border [&::-webkit-details-marker]:hidden"
+          >
+            <SlidersHorizontal size={15} />
+          </summary>
+          <div className="absolute right-0 bottom-11 z-30 grid w-60 gap-3 rounded-2xl border bg-card p-4 text-card-foreground shadow-xl">
+            <label className="grid gap-1 font-mono text-[10px]">
+              Color harmony
+              <select
+                aria-label="Color harmony"
+                value={harmony}
+                onChange={(e) => changeHarmony(e.target.value as ColorHarmony)}
+                className="w-full cursor-pointer rounded-lg border bg-card px-2 py-2 text-card-foreground"
+              >
+                <option value="analogous">Analogous</option>
+                <option value="complementary">Complementary</option>
+                <option value="split-complementary">Split complementary</option>
+                <option value="triadic">Triadic</option>
+              </select>
+            </label>
+            <span className="font-mono text-[10px]">
+              {names[selected]} color
+            </span>
+            <div className="flex justify-between">
+              {PRESETS.map((p) => (
+                <button
+                  key={p.name}
+                  aria-label={`${p.name} preset`}
+                  title={p.name}
+                  className="size-6 rounded-full border"
+                  style={{
+                    background: `conic-gradient(${p.colors.join(",")},${p.colors[0]})`,
+                  }}
+                  onClick={() => {
+                    const next = harmonize(
+                      hexToHsva(p.colors[0]),
+                      current.current.harmony,
+                      current.current.count
+                    )
+                    setTones(next)
+                    current.current.tones = next
+                    apply(next)
+                  }}
+                />
+              ))}
+            </div>
+            {(
+              [
+                ["Hue", "h", 360],
+                ["Saturation", "s", 100],
+                ["Brightness", "v", 100],
+              ] as const
+            ).map(([label, key, max]) => (
+              <label key={key} className="grid gap-1 font-mono text-[10px]">
+                <span className="flex justify-between">
+                  {label}
+                  <span>
+                    {Math.round(picked[key])}
+                    {key === "h" ? "°" : "%"}
+                  </span>
+                </span>
+                <input
+                  type="range"
+                  aria-label={`Theme ${label.toLowerCase()}`}
+                  min="0"
+                  max={max}
+                  value={picked[key]}
+                  className="w-full accent-current"
+                  onChange={(e) => {
+                    drag.current = "slider"
+                    preview({ ...picked, [key]: +e.target.value })
+                  }}
+                  onKeyUp={() => apply()}
+                  onBlur={() => apply()}
+                />
+              </label>
+            ))}
+          </div>
+        </details>
       </div>
     </HomeBox>
   )

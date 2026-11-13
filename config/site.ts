@@ -4,3 +4,9 @@ export const SITE_INFO = {
 }
 
 export const SOURCE_CODE_GITHUB_URL = "https://github.com/sahil-mengji/portfolio"
+
+export const SOURCE_CODE_GITHUB_REPO = "sahil-mengji/portfolio"
+
+export const UTM_PARAMS = {
+  utm_source: "sahilmengji.com",
+}

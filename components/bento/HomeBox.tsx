@@ -1,5 +1,6 @@
 "use client"
-import { useMemo } from "react"
+import { useMemo, type CSSProperties } from "react"
+import { ensureContrast, type generateColorPalette } from "@/lib/color-utils"
 import { cn } from "@/lib/utils"
 import { useThemeColorContext } from "@/components/theme-provider"
 import { getBoxPalette } from "@/components/bento/box-palettes"
@@ -12,6 +13,7 @@ export function HomeBox({
   allowOverflow = false,
   surfaceOverride,
   liveSurface,
+  livePalette,
   transparent = false,
 }: {
   outerClassName?: string
@@ -21,26 +23,50 @@ export function HomeBox({
   allowOverflow?: boolean
   surfaceOverride?: string
   liveSurface?: string
+  livePalette?: ReturnType<typeof generateColorPalette>
   transparent?: boolean
 }) {
   const { palette: universalPalette, isOverridden } = useThemeColorContext()
   const palette = useMemo(() => {
+    if (livePalette) return livePalette
     if (!isOverridden && boxKey) {
       const boxPalette = getBoxPalette(boxKey)
       if (boxPalette) return boxPalette
     }
     return universalPalette
-  }, [universalPalette, isOverridden, boxKey])
+  }, [universalPalette, isOverridden, boxKey, livePalette])
 
   const overflow = allowOverflow ? "overflow-visible" : "overflow-hidden"
   // Per-card surface override (default mode only — themed mode always follows palette).
   // liveSurface wins in EVERY mode: the owning box paints per-frame during
   // drags instead of waiting for the debounced site commit.
-  const useLive = liveSurface != null
-  const surface = liveSurface ?? (!isOverridden && surfaceOverride ? surfaceOverride : palette.surface)
-  // Single-layer card: no nested inner content divs — `className` (padding /
-  // layout) applies directly on the card surface so children sit straight
-  // on the card. The subtle bottom shade is an absolute overlay, not a wrapper.
+  const surface =
+    liveSurface ??
+    (!isOverridden && surfaceOverride ? surfaceOverride : palette.surface)
+  const ink = ensureContrast(palette.cardText, surface)
+  const mutedInk = ensureContrast(palette.cardSecondaryText, surface)
+  const accent = ensureContrast(palette.brand, surface, 3)
+  const tokens = {
+    background: transparent ? "transparent" : surface,
+    color: ink,
+    "--card": surface,
+    "--card-foreground": ink,
+    "--foreground": ink,
+    "--text": ink,
+    "--surface": surface,
+    "--surface-foreground": ink,
+    "--muted": surface,
+    "--accent": accent,
+    "--accent-foreground": ensureContrast(palette.brandForeground, accent),
+    "--card-text": ink,
+    "--card-muted": mutedInk,
+    "--muted-foreground": mutedInk,
+    "--card-heading": ensureContrast(palette.cardHeading, surface),
+    "--border": ensureContrast(palette.brand, surface, 3),
+    "--ring": ensureContrast(palette.cardText, surface, 3),
+    "--effect-surface": palette.effectSurface,
+    "--effect-text": palette.effectText,
+  } as CSSProperties
   return (
     <div
       className={cn(
@@ -49,34 +75,8 @@ export function HomeBox({
         outerClassName,
         className
       )}
-      style={
-        transparent
-          ? !useLive && (isOverridden || !boxKey)
-            ? ({ background: "transparent" } as any)
-            : ({
-                background: "transparent",
-                color: palette.cardText,
-                ["--card" as any]: surface,
-                ["--card-foreground" as any]: palette.cardText,
-                ["--card-text" as any]: palette.cardText,
-                ["--card-muted" as any]: palette.cardSecondaryText,
-              } as any)
-          : !useLive && (isOverridden || !boxKey)
-            ? ({ background: `color-mix(in oklab, var(--card) 92%, transparent)` } as any)
-            : ({
-                background: `color-mix(in oklab, ${surface} 92%, transparent)`,
-                color: palette.cardText,
-                ["--card" as any]: surface,
-                ["--card-foreground" as any]: palette.cardText,
-                ["--card-text" as any]: palette.cardText,
-                ["--card-muted" as any]: palette.cardSecondaryText,
-              } as any)
-      }
+      style={tokens}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 rounded-[inherit] bg-gradient-to-b from-transparent to-black/5 dark:to-white/5"
-      />
       {children}
     </div>
   )

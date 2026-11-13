@@ -1,7 +1,11 @@
 "use client"
-import { BentoCell } from "./BentoCell"
+import { HomeBox } from "@/components/bento/HomeBox"
 
 export function BentoListBox() {
-  return <BentoCell boxKey="list" area="bento-list" title="List" />
+  return (
+    <HomeBox boxKey="list" outerClassName="bento-list h-full w-full">
+      <div className="h-full w-full" />
+    </HomeBox>
+  )
 }
 export default BentoListBox

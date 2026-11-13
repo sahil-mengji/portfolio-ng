@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useTransition } from "react"
 import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { ExternalLink, X } from "lucide-react"
+import { useThemeColorContext } from "@/components/theme-provider"
+import { readableInkOn } from "@/lib/color-utils"
 import { getLenis } from "@/lib/lenis"
 import { Text } from "@/components/ui/text"
 import {
@@ -11,6 +13,7 @@ import {
   education,
   achievements,
   certifications,
+  skillGroups,
 } from "@/lib/dummy-data"
 import type {
   WorkExp,
@@ -26,11 +29,13 @@ const TAB_COLORS = {
   work: "#A0355C",
   education: "#E4FF9A",
   achievements: "#94B7E3",
+  skills: "#DE7A2E",
 } as const
 const TAB_INK: Record<keyof typeof TAB_COLORS, string> = {
   work: "#FFFFFF",
   education: "#1A1A1A",
   achievements: "#14202E",
+  skills: "#1A1A1A",
 }
 const WEDGE = "polygon(0 13%, 100% 0, 100% 100%, 0 87%)"
 // Exact sheet color = the selected tab's color. Text pins var(--text) /
@@ -38,18 +43,23 @@ const WEDGE = "polygon(0 13%, 100% 0, 100% 100%, 0 87%)"
 // readable ink — full-strength bg, still legible in every site theme.
 // --accent/--surface are retargeted too so timeline rails, dots and tags
 // stay visible on the saturated sheet instead of clashing with it.
-const panelVars = (tab: keyof typeof TAB_COLORS) => {
-  const ink = TAB_INK[tab]
-  const dim = `color-mix(in srgb, ${ink} 72%, transparent)`
+const panelVars = (
+  tab: keyof typeof TAB_COLORS,
+  surface = TAB_COLORS[tab] as string
+) => {
+  const ink = readableInkOn(surface)
+  const dim = ink
   return {
-    background: TAB_COLORS[tab],
+    background: surface,
     color: ink,
     ["--text" as any]: ink,
     ["--card-text" as any]: ink,
     ["--card-muted" as any]: dim,
     ["--muted-foreground" as any]: dim,
     ["--accent" as any]: ink,
-    ["--surface" as any]: TAB_COLORS[tab],
+    ["--surface" as any]: surface,
+    ["--foreground" as any]: ink,
+    ["--ring" as any]: ink,
   } as React.CSSProperties
 }
 
@@ -61,6 +71,7 @@ const TABS = [
   { id: "work", label: "Work" },
   { id: "education", label: "Education" },
   { id: "achievements", label: "Achievements" },
+  { id: "skills", label: "Skills" },
 ] as const
 
 const TAB_META = {
@@ -70,13 +81,77 @@ const TAB_META = {
     title: "Achievements",
     blurb: "Awards, recognition, and milestones.",
   },
+  skills: {
+    title: "Skills",
+    blurb: "Tools and strengths, grouped.",
+  },
 } as const
 
+// Brand icons for skills that have an exact Simple Icons match —
+// everything else gets a two-letter monogram tile. Icon Dahlia: colored
+// brand glyphs straight from the CDN, no bundle cost.
+const SKILL_ICONS: Record<string, string> = {
+  JavaScript: "javascript",
+  TypeScript: "typescript",
+  "C++": "cplusplus",
+  C: "c",
+  Python: "python",
+  HTML: "html5",
+  CSS: "css",
+  "Tailwind CSS": "tailwindcss",
+  "shadcn/ui": "shadcnui",
+  React: "react",
+  "React Query": "reactquery",
+  "React Router": "reactrouter",
+  Redux: "redux",
+  "React Native": "react",
+  "Next.js": "nextdotjs",
+  "Node.js": "nodedotjs",
+  "Express.js": "express",
+  MongoDB: "mongodb",
+  JWT: "jsonwebtokens",
+  AWS: "amazonwebservices",
+  Docker: "docker",
+  Nginx: "nginx",
+  Kafka: "apachekafka",
+  "Socket.io": "socketdotio",
+  WebRTC: "webrtc",
+  GraphQL: "graphql",
+  Prisma: "prisma",
+  Firebase: "firebase",
+  GitHub: "github",
+  NPM: "npm",
+  "VS Code": "vscode",
+  Linux: "linux",
+  Figma: "figma",
+  "Adobe Illustrator": "adobeillustrator",
+  SVG: "svg",
+}
+
+function SkillMonogram({ skill }: { skill: string }) {
+  const initials = skill
+    .replace(/[^A-Za-z ]/g, "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+  return (
+    <span
+      aria-hidden
+      className="grid size-4 shrink-0 place-items-center rounded-[4px] border border-black/20 font-mono text-[8px] font-semibold"
+    >
+      {initials}
+    </span>
+  )
+}
 // Entry counts per tab, shown small beside the panel title.
 const TAB_COUNT: Record<TabId, number> = {
   work: workExperience.length,
   education: education.length,
   achievements: achievements.length,
+  skills: skillGroups.reduce((n, g) => n + g.skills.length, 0),
 }
 
 type TabId = (typeof TABS)[number]["id"]
@@ -341,6 +416,22 @@ function AchievementPreview({
   )
 }
 
+function SkillsPreview({ index }: { index: number }) {
+  const fallback = [
+    BOARD_POOL[index % BOARD_POOL.length],
+    BOARD_POOL[(index + 3) % BOARD_POOL.length],
+  ]
+  const images: [string, string, string] = [
+    fallback[0],
+    fallback[1],
+    BOARD_POOL[(index + 5) % BOARD_POOL.length],
+  ]
+  return (
+    <div className="flex w-full flex-1 items-center justify-center">
+      <PhotoBoard images={images} alt="Skill snapshots" seed={index} />
+    </div>
+  )
+}
 // Dynamic space left of the tabs: resume photo by default, stacked
 // photos centered horizontally + vertically for the hovered entry.
 // Entire pane tracks the smooth mouse Y, clamped so it stops at the
@@ -407,7 +498,7 @@ function PreviewPane({ preview }: { preview: Preview }) {
       // mt-16 / lg:mt-24 mirrors the section's removed top padding, so
       // the resume's rest position is unchanged — only the work panel
       // moves up. (Once stuck, top-[12vh] governs either way.)
-      className="mt-16 flex w-full shrink-0 flex-col justify-center lg:sticky lg:top-[12vh] lg:w-1/2 lg:flex-1 lg:self-start lg:mt-24"
+      className="mt-16 flex w-full shrink-0 flex-col justify-center lg:sticky lg:top-[12vh] lg:mt-24 lg:w-1/2 lg:flex-1 lg:self-start"
     >
       <div
         ref={boxRef}
@@ -427,11 +518,13 @@ function PreviewPane({ preview }: { preview: Preview }) {
               e={education[preview.index]}
               index={preview.index}
             />
-          ) : (
+          ) : preview.tab === "achievements" ? (
             <AchievementPreview
               a={achievements[preview.index]}
               index={preview.index}
             />
+          ) : (
+            <SkillsPreview index={preview.index} />
           )}
         </div>
       </div>
@@ -512,6 +605,9 @@ function Panel({
 }
 
 export function VerticalBannerTabs() {
+  const { palette, isOverridden } = useThemeColorContext()
+  const tabColor = (id: TabId) =>
+    isOverridden ? palette.surface : TAB_COLORS[id]
   const [tab, setTab] = useState<TabId>("work")
   const [stuck, setStuck] = useState(false)
   const [preview, setPreview] = useState<Preview>(null)
@@ -614,8 +710,11 @@ export function VerticalBannerTabs() {
                     active ? "relative z-10 md:-mr-px" : ""
                   }`}
                   style={{
-                    background: TAB_COLORS[t.id],
-                    color: TAB_INK[t.id],
+                    background: tabColor(t.id),
+                    color: readableInkOn(tabColor(t.id)),
+                    boxShadow: active
+                      ? "inset -3px 0 0 currentColor"
+                      : undefined,
                     clipPath: WEDGE,
                   }}
                 >
@@ -632,24 +731,24 @@ export function VerticalBannerTabs() {
             tab color — bg matches the selected card 1:1. */}
           <div
             className="min-w-0 flex-1 rounded-none p-8 backdrop-blur transition-colors duration-300 md:p-14"
-            style={panelVars(tab)}
+            style={panelVars(tab, tabColor(tab))}
             onMouseLeave={() => setPreview(null)}
           >
             <div ref={sentinelRef} aria-hidden className="h-px w-px" />
             <div
               className="sticky top-0 z-10 -mx-8 mb-8 flex flex-wrap items-end justify-between gap-2 px-8 pt-4 pb-7 md:-mx-14 md:px-14"
-              style={{ background: TAB_COLORS[tab] }}
+              style={{ background: tabColor(tab) }}
             >
               <div>
                 <div className="flex items-baseline gap-2">
                   <div className="font-heading text-3xl leading-none md:text-4xl">
                     {TAB_META[tab].title}
                   </div>
-                  <span className="font-heading text-lg tabular-nums opacity-60 md:text-xl">
+                  <span className="font-heading text-lg tabular-nums md:text-xl">
                     ({TAB_COUNT[tab]})
                   </span>
                 </div>
-                <Text.Body size="sm" className="mt-1.5 opacity-75">
+                <Text.Body size="sm" className="mt-1.5">
                   {TAB_META[tab].blurb}
                 </Text.Body>
               </div>
@@ -703,7 +802,7 @@ export function VerticalBannerTabs() {
                           <Text.Body className="leading-snug font-medium">
                             {e.school}
                           </Text.Body>
-                          <Text.Body size="sm" className="mt-0.5 opacity-70">
+                          <Text.Body size="sm" className="mt-0.5">
                             {e.degree} · {e.period} · {e.location}
                           </Text.Body>
                         </div>
@@ -747,7 +846,7 @@ export function VerticalBannerTabs() {
                                 className="flex flex-wrap items-baseline justify-between gap-2"
                               >
                                 <Text.Body size="sm">{p.title}</Text.Body>
-                                <Text.Caption className="opacity-70">
+                                <Text.Caption>
                                   {p.desc}
                                 </Text.Caption>
                               </div>
@@ -808,7 +907,7 @@ export function VerticalBannerTabs() {
                           {a.org} · {a.year}
                         </Text.Caption>
                       </div>
-                      <Text.Body size="sm" className="mt-1 opacity-80">
+                      <Text.Body size="sm" className="mt-1">
                         {a.description}
                       </Text.Body>
                       {/* Project links */}
@@ -845,6 +944,50 @@ export function VerticalBannerTabs() {
                           ))}
                         </div>
                       )}
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+            )}
+
+            {tab === "skills" && (
+              <Panel key="skills" label="Skills">
+                <div className="grid divide-y divide-black/10">
+                  {skillGroups.map((g, gi) => (
+                    <div
+                      key={g.title}
+                      onMouseEnter={() =>
+                        setPreview({ tab: "skills", index: gi })
+                      }
+                      className={`rounded-md py-4 transition-colors hover:bg-black/[0.04] ${gi === 0 ? "pt-0" : ""} ${gi === skillGroups.length - 1 ? "pb-0" : ""}`}
+                    >
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <Text.Body className="font-medium">{g.title}</Text.Body>
+                        <Text.Caption>{g.blurb}</Text.Caption>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {g.skills.map((s) => (
+                          <span
+                            key={s}
+                            className="group/skill inline-flex items-center gap-1.5 rounded-full border border-black/15 px-3 py-1"
+                          >
+                            {SKILL_ICONS[s] ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={`https://cdn.simpleicons.org/${SKILL_ICONS[s]}`}
+                                alt=""
+                                aria-hidden
+                                loading="lazy"
+                                draggable={false}
+                                className="size-4 shrink-0 transition-transform duration-500 ease-out select-none group-hover/skill:scale-125 group-hover/skill:-rotate-6"
+                              />
+                            ) : (
+                              <SkillMonogram skill={s} />
+                            )}
+                            <Text.Caption>{s}</Text.Caption>
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>

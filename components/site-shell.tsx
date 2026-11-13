@@ -174,6 +174,18 @@ export function SiteShell({
           paddingLeft: 20,
         }}
       >
+        <span
+          data-theme-hand-origin
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: 76,
+            bottom: 56,
+            width: 0,
+            height: 0,
+            pointerEvents: "none",
+          }}
+        />
         <div
           style={{
             transform: shown ? "translateY(0)" : "translateY(120%)",
@@ -198,6 +210,12 @@ export function SiteShell({
           display: "flex",
           flexDirection: "column",
           minHeight: "calc(100vh - 2rem)",
+          // Clips the viewport-wide hairlines (w-screen breakouts and
+          // ±100vw screen-line pseudos) at the viewport edge so they
+          // paint edge-to-edge without causing x-overscroll. `clip`
+          // (unlike hidden) creates no scroll container: fixed children
+          // (ruler, sheets) stay viewport-pinned and sticky keeps working.
+          overflowX: "clip",
         }}
       >
         <div style={{ flex: "1 0 auto", minWidth: 0 }}>{children}</div>

@@ -1,4 +1,5 @@
 "use client"
+import { readableInkOn } from "@/lib/color-utils"
 import { HomeBox } from "@/components/bento/HomeBox"
 import { useThemeColorContext } from "@/components/theme-provider"
 
@@ -6,7 +7,7 @@ export function BentoNotchedBox() {
   const { palette, isOverridden } = useThemeColorContext()
   // themified folder: blue #72b6f7 when unset, universal brand when overridden
   const folderFill = isOverridden ? palette.brand : "#72b6f7"
-  const folderOpacity = 0.8
+  const folderOpacity = 1
   return (
     <HomeBox
       boxKey="notch"
@@ -24,7 +25,6 @@ export function BentoNotchedBox() {
         {/* subtle file lines */}top-l
         <div className="absolute top-10 right-16 left-12 h-1.5 rounded-full bg-black/[0.04]" />
         <div className="absolute top-14 right-20 left-12 h-1.5 rounded-full bg-black/[0.03]" />
-
         {/* Backdrop blur clipped to SAME notched shape as SVG – very strong */}
         <svg width="0" height="0" className="absolute">
           <defs>
@@ -37,12 +37,22 @@ export function BentoNotchedBox() {
           </defs>
         </svg>
         <div
-          className="absolute bottom-0 left-0 h-[112%] w-full overflow-visible bg-white/[0.08] backdrop-blur-[28px] border border-white/10"
-          style={{ clipPath: "url(#notchClip)", WebkitClipPath: "url(#notchClip)" } as any}
+          className="absolute bottom-0 left-0 h-[112%] w-full overflow-visible border border-white/10 bg-white/[0.08] backdrop-blur-[28px]"
+          style={
+            {
+              clipPath: "url(#notchClip)",
+              WebkitClipPath: "url(#notchClip)",
+            } as any
+          }
         />
         <div
           className="absolute bottom-0 left-0 h-[112%] w-full overflow-visible bg-gradient-to-br from-white/20 via-transparent to-transparent backdrop-blur-3xl"
-          style={{ clipPath: "url(#notchClip)", WebkitClipPath: "url(#notchClip)" } as any}
+          style={
+            {
+              clipPath: "url(#notchClip)",
+              WebkitClipPath: "url(#notchClip)",
+            } as any
+          }
         />
         <svg
           viewBox="0 0 5042 2720"
@@ -59,7 +69,10 @@ export function BentoNotchedBox() {
       </div>
 
       {/* Content – positioned over shape, allowed to overflow */}
-      <div className="relative z-10 flex h-full flex-col justify-between p-6 text-white">
+      <div
+        className="relative z-10 flex h-full flex-col justify-between p-6"
+        style={{ color: readableInkOn(folderFill) }}
+      >
         <div className="flex items-start justify-between">
           <span className="rounded-full bg-white/20 px-3 py-1 font-mono text-xs tracking-widest backdrop-blur">
             NOTCHED — 3×2
@@ -69,10 +82,10 @@ export function BentoNotchedBox() {
           </span>
         </div>
         <div>
-          <h3 className="text-2xl leading-tight font-semibold text-white drop-shadow">
+          <h3 className="text-2xl leading-tight font-semibold">
             Overflow cell
           </h3>
-          <p className="mt-1 max-w-[32ch] text-sm text-white/90">
+          <p className="mt-1 max-w-[32ch] text-sm">
             Shape from provided SVG — HomeBox with{" "}
             <code className="rounded bg-white/20 px-1">allowOverflow</code>.
           </p>

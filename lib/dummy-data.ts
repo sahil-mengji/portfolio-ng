@@ -5,6 +5,7 @@ export type BlogPost = {
   date: string
   readingTime: string
   tags: string[]
+  image: string
   body: string
 }
 
@@ -16,106 +17,6 @@ export type Project = {
   stack: string[]
   body: string
 }
-
-export const blogPosts: BlogPost[] = [
-  {
-    slug: "designing-with-a-single-color",
-    title: "Designing with a Single Color",
-    excerpt:
-      "How one picker can drive a whole system — bg is primary, guidelines flip white/dark by luminosity.",
-    date: "2026-02-14",
-    readingTime: "5 min",
-    tags: ["Design", "Theming"],
-    body: `We start with a single hex. Luminance decides guidelines: dark hues get white, light hues get a darker shade of the same color.
-
-## One value, whole system
-
-Primary is the site background. Navbar, text and grid all derive from that one value — read more in the [theming notes](/design-system) or the [OKLCH docs](https://oklch.com).
-
-### Token mapping
-
-| Token | Derivation | Notes |
-| --- | --- | --- |
-| \`--primary\` | picked hex | page background |
-| \`--grid-ink\` | luminance flip | white on dark, dark shade on light |
-| \`--surface\` | hue-tinted mix | never flat white/black |
-
-> The trick is hue-tinted surfaces: mix the primary hue into every surface so the UI never collapses to flat white or black.
-
-### Derivation snippet
-
-\`\`\`css
-:root {
-  --primary: oklch(0.55 0.2 270);
-  --grid-ink: oklch(from var(--primary) clamp(0.2, 0.95 - l, 0.95) 0.02 h);
-}
-\`\`\`
-
-- Pick one hex in the [picker](/design-system)
-- Surfaces follow automatically
-- Text stays legible via \`color-mix\` tints`,
-  },
-  {
-    slug: "instrument-serif-in-practice",
-    title: "Instrument Serif in Practice",
-    excerpt: "Why subheadings feel editorial when set in Instrument Serif.",
-    date: "2026-01-28",
-    readingTime: "4 min",
-    tags: ["Typography"],
-    body: `Subheadings use <Highlight>Instrument Serif</Highlight> — a sharp, high-contrast serif that pairs with the neutral sans.
-
-## The pairing
-
-Headings stay bold sans, body stays relaxed. All via presets: \`Text.Heading\`, \`Text.Subheading\` (Instrument Serif), \`Text.Body\`, \`Text.Link\`.
-
-<Callout title="When to reach for it">
-Pull quotes, section titles and empty states. Never body copy — contrast this high gets tiring at paragraph length.
-</Callout>
-
-### Rules of thumb
-
-1. One serif voice per page
-2. Tight leading and tracking
-3. Pair with a quiet grotesque — see [fontsource](https://fontsource.org) for self-hosting
-
-*Italic* for emphasis, **bold** for structure, ~~strikethrough~~ for retired drafts.`,
-  },
-  {
-    slug: "floating-navbar-tokens",
-    title: "Floating Navbar Tokens",
-    excerpt: "Themifying a floating navbar so its bg is the primary color.",
-    date: "2026-01-10",
-    readingTime: "3 min",
-    tags: ["UI", "Tokens"],
-    body: `Navbar background is now primary. Foreground is gridInk, muted is gridInk at 68% opacity, accent pill is gridInk at 14%.
-
-## Token recipe
-
-| Token | Value | Used for |
-| --- | --- | --- |
-| \`--nav-bg\` | \`var(--primary)\` | floating bar |
-| \`--nav-fg\` | \`var(--grid-ink)\` | links |
-| \`--nav-muted\` | \`grid-ink 68%\` | secondary text |
-
-### Scroll behavior
-
-\`\`\`ts
-useMotionValueEvent(scrollY, "change", (y) => {
-  hidden.set(y > last && y > 120) // hide on scroll down
-})
-\`\`\`
-
----
-
-## Rollout checklist
-
-- [x] Bg follows the picker
-- [x] Hides on scroll down, returns on scroll up
-- [ ] Reduced-motion path
-
-It hides on scroll down and reappears on scroll up — fully driven by the picker.`,
-  },
-]
 
 export const projects: Project[] = [
   {
@@ -445,6 +346,86 @@ export const certifications: Certification[] = [
     title: "NPTEL / SWAYAM Courses",
     org: "IIT / IISc",
     href: "https://nptel.ac.in",
+  },
+]
+
+export type SkillGroup = {
+  title: string
+  blurb: string
+  skills: string[]
+}
+
+// Every item below is evidenced across this portfolio's own repos
+// (p2 + p4 + current) — groups mirror p2/p4's buckets.
+export const skillGroups: SkillGroup[] = [
+  {
+    title: "Languages",
+    blurb: "Daily drivers.",
+    skills: ["JavaScript", "TypeScript", "C++", "C", "Python"],
+  },
+  {
+    title: "Frontend",
+    blurb: "Shipped to production.",
+    skills: [
+      "HTML",
+      "CSS",
+      "Tailwind CSS",
+      "shadcn/ui",
+      "React",
+      "React Query",
+      "React Router",
+      "Redux",
+      "React Native",
+      "Next.js",
+    ],
+  },
+  {
+    title: "Backend & Database",
+    blurb: "APIs, data and infra.",
+    skills: [
+      "Node.js",
+      "Express.js",
+      "MongoDB",
+      "JWT",
+      "AWS",
+      "Docker",
+      "Nginx",
+      "Kafka",
+      "Socket.io",
+      "WebRTC",
+      "GraphQL",
+      "Prisma",
+      "Firebase",
+      "DBMS",
+    ],
+  },
+  {
+    title: "Design",
+    blurb: "Interfaces with intent.",
+    skills: [
+      "Figma",
+      "Adobe Illustrator",
+      "UI/UX Design",
+      "Animation",
+      "SVG",
+      "Typography",
+    ],
+  },
+  {
+    title: "Dev Tools",
+    blurb: "Daily workflow.",
+    skills: ["GitHub", "NPM", "VS Code", "Linux", "Git"],
+  },
+  {
+    title: "Practices",
+    blurb: "Coursework + field work.",
+    skills: [
+      "Mobile Development",
+      "Data Structures & Algorithms",
+      "Operating Systems",
+      "Computer Networks",
+      "Software Engineering",
+    ],
   },
 ]
 

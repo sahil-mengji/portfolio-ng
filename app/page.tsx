@@ -1,7 +1,4 @@
-"use client"
-
 import { Link } from "next-view-transitions"
-import { useRouter } from "next/navigation"
 import {
   DraftingCompass,
   Ruler,
@@ -12,13 +9,13 @@ import {
   Layers,
   Spline,
 } from "lucide-react"
-import { Text } from "@/components/ui/text"
+import { Subheading } from "@/components/ui/text"
 import { SiteShell } from "@/components/site-shell"
-import { blogPosts } from "@/lib/dummy-data"
-import { rememberBlogReturn } from "@/lib/blog-return"
+import { getBlogPosts } from "@/lib/blog"
+import { PostCard } from "@/components/post-card"
 import { P2BentoGrid } from "@/components/bento/P2BentoGrid"
 import { VerticalBannerTabs } from "@/components/vertical-banner-tabs"
-import { LaptopBack } from "@/components/laptop-back"
+// import { LaptopBack } from "@/components/laptop-back"
 // import { OrbitSpread } from "@/components/orbit-spread"
 import { ProfileHeader } from "@/components/profile-header"
 import { SectionSeparator } from "@/components/section-separator"
@@ -49,7 +46,7 @@ const BLOG_PILLS = [
 ]
 
 export default function Page() {
-  const router = useRouter()
+  const blogPosts = getBlogPosts()
   return (
     <SiteShell>
       <div className="mx-auto max-w-7xl space-y-20">
@@ -139,9 +136,9 @@ export default function Page() {
             outer edge pinned to the right vertical measure rule. */}
         <div className="flex flex-wrap items-center gap-0 pl-[calc((100vw_-_92rem)/2)]">
           {/* md:pl-[max(2rem,)] */}
-          <Text.Subheading className="min-w-56 flex-1 !text-5xl md:!text-8xl">
+          <Subheading className="min-w-56 flex-1 !text-5xl md:!text-8xl">
             Proof <br /> of work.
-          </Text.Subheading>
+          </Subheading>
           {/* Circles grid: shifted left so its outer right edge aligns
               exactly with the fine running vertical measure rule (never
               crossing past it); shrink-0 keeps the circles clear of the
@@ -273,9 +270,9 @@ export default function Page() {
                 stretch to take their whole cell. Heading steps down so
                 all four cells land the same size. */}
                 <div className="flex flex-col justify-center bg-background md:col-start-2">
-                  <Text.Subheading className="text-right !text-5xl md:!text-8xl">
+                  <Subheading className="text-right !text-5xl md:!text-8xl">
                     Blogs.
-                  </Text.Subheading>
+                  </Subheading>
                   {/* Pills in flex layout: two rows (4 + 3) — each pill widths
                   to its own text, uniform height, zero gaps. */}
                   <div className="mt-4 flex justify-end md:mt-6">
@@ -308,31 +305,12 @@ export default function Page() {
                     </div>
                   </div>
                 </div>
-                {blogPosts.map((post) => (
-                  <Link
+                {blogPosts.map((post, index) => (
+                  <PostCard
                     key={post.slug}
-                    href={`/blogs/${post.slug}`}
-                    onClick={rememberBlogReturn}
-                    className="group block min-h-[220px] bg-background p-5 md:min-h-[240px] md:p-6"
-                  >
-                    <Text.Subheading
-                      as="h4"
-                      size="sm"
-                      className="!text-3xl group-hover:underline group-hover:underline-offset-4"
-                      style={{ viewTransitionName: `blog-title-${post.slug}` }}
-                    >
-                      {post.title}
-                    </Text.Subheading>
-                    <Text.Body
-                      size="sm"
-                      className="mt-2 line-clamp-3 opacity-80"
-                      style={{
-                        viewTransitionName: `blog-excerpt-${post.slug}`,
-                      }}
-                    >
-                      {post.excerpt}
-                    </Text.Body>
-                  </Link>
+                    post={post}
+                    imageLoading={index <= 3 ? "eager" : "lazy"}
+                  />
                 ))}
               </div>
               {/* Blueprint lines: one vertical double in the middle-column
@@ -419,7 +397,8 @@ export default function Page() {
             </div>
           </section>
         </div>
-        <LaptopBack />
+        {/* Laptop lid visual — parked for now, restore by uncommenting */}
+        {/* <LaptopBack /> */}
       </div>
       <ScrollRuler />
     </SiteShell>

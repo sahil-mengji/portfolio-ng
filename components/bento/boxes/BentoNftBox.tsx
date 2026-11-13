@@ -1,10 +1,7 @@
 "use client"
-import LikeButton from "@/components/LikeButton"
 import { HomeBox } from "@/components/bento/HomeBox"
 
-// NFT cell: p2 NFTCard backdrop (violet wash + grid + NFT tag) with the
-// shared pixel-heart LikeButton straddling the bottom edge.
-// No 3D tilt here — the cell is small and the button needs stable clicks.
+// NFT cell: p2 NFTCard backdrop (violet wash + grid + NFT tag).
 
 export function BentoNftBox() {
   return (
@@ -29,16 +26,6 @@ export function BentoNftBox() {
           NFT
         </p> */}
 
-        {/* Caption */}
-        <p
-          className="absolute top-3 left-4 text-3xl leading-snug text-card-foreground"
-          style={{ fontFamily: "var(--font-heading)" }}
-        >
-          like the <br /> Portfolio ?
-        </p>
-
-        {/* Like button straddling the bottom edge */}
-        <LikeButton className="absolute bottom-[-10%] left-1/2 -translate-x-1/2 transform" />
       </div>
     </HomeBox>
   )

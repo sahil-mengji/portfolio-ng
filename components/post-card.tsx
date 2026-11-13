@@ -1,0 +1,68 @@
+"use client"
+
+import type { ImageProps } from "next/image"
+import Image from "next/image"
+import { Link } from "next-view-transitions"
+
+import type { BlogPost } from "@/lib/dummy-data"
+import { rememberBlogReturn } from "@/lib/blog-return"
+import { cn } from "@/lib/utils"
+
+function formatDate(iso: string) {
+  const d = new Date(iso)
+  const dd = String(d.getDate()).padStart(2, "0")
+  const mm = String(d.getMonth() + 1).padStart(2, "0")
+  return `${dd}.${mm}.${d.getFullYear()}`
+}
+
+export function PostCard({
+  post,
+  imageLoading = "lazy",
+}: {
+  post: BlogPost
+  imageLoading?: ImageProps["loading"]
+}) {
+  return (
+    <Link
+      href={`/blogs/${post.slug}`}
+      onClick={rememberBlogReturn}
+      className={cn(
+        "group flex flex-col gap-2 p-2 transition-[background-color] ease-out hover:bg-accent-muted",
+        "max-sm:screen-line-top max-sm:screen-line-bottom",
+        "sm:nth-[2n+1]:screen-line-top sm:nth-[2n+1]:screen-line-bottom"
+      )}
+    >
+      <div className="relative select-none [&_img]:aspect-1200/630 [&_img]:rounded-xl">
+        <Image
+          src={post.image}
+          alt={post.title}
+          width={1200}
+          height={630}
+          quality={100}
+          loading={imageLoading}
+          unoptimized
+        />
+
+        <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-black/10 ring-inset dark:ring-white/10" />
+      </div>
+
+      <div className="flex flex-col gap-1 p-2">
+        <h3
+          className="text-lg leading-snug font-medium text-balance"
+          style={{ viewTransitionName: `blog-title-${post.slug}` }}
+        >
+          {post.title}
+        </h3>
+
+        <dl>
+          <dt className="sr-only">Published on</dt>
+          <dd className="text-sm text-muted-foreground">
+            <time dateTime={new Date(post.date).toISOString()}>
+              {formatDate(post.date)}
+            </time>
+          </dd>
+        </dl>
+      </div>
+    </Link>
+  )
+}

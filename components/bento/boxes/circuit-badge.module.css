@@ -1,0 +1,635 @@
+.cell {
+  min-height: 0;
+  overflow: hidden;
+  cursor: default;
+  isolation: isolate;
+}
+.stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 22px 21px 24px;
+  perspective: 1000px;
+  background: radial-gradient(
+    ellipse at 25% 15%,
+    #e6e4dc 0%,
+    #c8c7bf 50%,
+    #abaea6 100%
+  );
+}
+.stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.14;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23888' filter='url(%23n)' opacity='.5' d='M0 0h180v180H0z'/%3E%3C/svg%3E");
+}
+.badge {
+  position: relative;
+  container-type: inline-size;
+  --badge-hardware-height: min(58%, calc(100cqw * 0.92));
+  width: 100%;
+  height: 100%;
+  max-width: 340px;
+  max-height: 570px;
+  transform: none;
+  transition: none;
+  transform-style: preserve-3d;
+  filter: drop-shadow(5px 14px 9px #20292055) drop-shadow(1px 3px 1px #19201d60);
+}
+.nameplate {
+  position: absolute;
+  inset: 0 1.8% 44%;
+  z-index: 1;
+  overflow: hidden;
+  background: linear-gradient(
+    126deg,
+    #333d3d 0%,
+    #1d282a 32%,
+    #192225 70%,
+    #20292a 100%
+  );
+  border: 1px solid #53605a;
+  border-radius: 7px 7px 3px 3px;
+  box-shadow:
+    inset 0 1px 1px #cad5ca40,
+    inset -2px 0 2px #080e0e,
+    1px 3px 0 #0c1515;
+}
+.nameplate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23888' filter='url(%23n)' d='M0 0h180v180H0z'/%3E%3C/svg%3E");
+}
+.slot {
+  position: absolute;
+  top: 5.1%;
+  width: 17%;
+  height: 3.1%;
+  border-radius: 8px;
+  background: #bfc1b8;
+  box-shadow:
+    inset 0 2px 2px #040b0bcc,
+    0 1px 0 #68706a;
+}
+.slot::before {
+  content: "";
+  position: absolute;
+  width: 35%;
+  height: 3px;
+  left: 32%;
+  top: -2px;
+  background: #bfc1b8;
+  border-radius: 2px 2px 0 0;
+}
+.slotLeft {
+  left: 7%;
+}
+.slotRight {
+  right: 7%;
+}
+.wordmark {
+  position: absolute;
+  top: 21%;
+  left: 0;
+  right: 0;
+  color: #e1e6df;
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(36px, 18cqw, 60px);
+  font-weight: 800;
+  letter-spacing: -3px;
+  line-height: 1;
+  text-shadow: 0 1px 1px #0008;
+}
+.wordmark span {
+  color: #aebfae;
+}
+.subtitle {
+  position: absolute;
+  top: 45%;
+  left: 0;
+  right: 0;
+  color: #aabbb4;
+  font: 7px/1 monospace;
+  letter-spacing: 2.1px;
+  text-align: center;
+}
+.testPads {
+  position: absolute;
+  top: 24%;
+  left: 3%;
+  display: grid;
+  gap: 4px;
+}
+.testPads i {
+  width: 4px;
+  height: 4px;
+  border: 1px solid #d2bc80;
+  border-radius: 50%;
+  box-shadow: 0 1px 1px #000;
+  background: #121c1d;
+}
+.illustration {
+  position: absolute;
+  inset: 12% 0 0;
+  width: 100%;
+  height: 88%;
+}
+.edition {
+  position: absolute;
+  right: 7%;
+  bottom: 7%;
+  color: #83948c;
+  font: 5px/1 monospace;
+  letter-spacing: 1px;
+}
+.hardware {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 46%;
+  border-radius: 5px 5px 33px 33px;
+}
+.pcb {
+  position: absolute;
+  inset: 7px;
+  border-radius: 1px 1px 25px 25px;
+  overflow: hidden;
+  background: linear-gradient(140deg, #172325, #121b1c 70%, #26302c);
+  box-shadow:
+    0 3px 0 #080c0c,
+    inset 0 0 0 1px #82928b66;
+}
+.pcb svg {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+}
+.ribbon {
+  position: absolute;
+  left: 3%;
+  top: 28%;
+  height: 46%;
+  width: 6%;
+  background: repeating-linear-gradient(
+    90deg,
+    #a26d23 0 2px,
+    #d6a456 2px 3px,
+    #5d461e 3px 4px
+  );
+  box-shadow:
+    inset 0 0 2px #e3bb63,
+    1px 1px 2px #000;
+}
+.chip {
+  position: absolute;
+  width: 17%;
+  height: 10%;
+  left: 9%;
+  bottom: 7%;
+  border: 2px solid #71736a;
+  background: repeating-linear-gradient(90deg, #141c1b 0 3px, #647165 3px 4px);
+}
+.powerLed {
+  position: absolute;
+  width: 3px;
+  height: 6px;
+  left: 4%;
+  bottom: 25%;
+  background: #b6ff5c;
+  box-shadow: 0 0 5px 2px #a9ed4077;
+}
+.boardLegend {
+  position: absolute;
+  right: 10%;
+  top: 3%;
+  font: 4px monospace;
+  color: #879e8b;
+  letter-spacing: 1px;
+}
+.acrylic {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: inherit;
+  border: 2px solid #e8f2e1a3;
+  background: linear-gradient(
+    115deg,
+    #f5fff71c,
+    transparent 18% 75%,
+    #d3e4db2b
+  );
+  box-shadow:
+    inset 2px 0 0 #ffffffa3,
+    inset -3px 0 0 #cadbd88c,
+    inset 0 -4px 0 #f0f6ed90,
+    1px 1px 0 #60726bb3,
+    0 2px 0 #d2ded6b3;
+}
+.acrylic::before {
+  content: "";
+  position: absolute;
+  inset: 5px 4px;
+  border: 1px solid #c6d8d888;
+  border-radius: 0 0 25px 25px;
+  box-shadow: inset 0 0 1px #fff;
+}
+.acrylic::after {
+  content: "";
+  position: absolute;
+  top: 18%;
+  left: -2px;
+  bottom: 22%;
+  width: 8px;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0 26px,
+    #e7efeac7 27px 30px,
+    transparent 32px 45px
+  );
+  border-left: 1px solid #efffee;
+}
+.hinge {
+  position: absolute;
+  z-index: 5;
+  left: 1%;
+  right: 1%;
+  top: 0;
+  height: 7%;
+  border-top: 2px solid #f0f6e7c4;
+  border-bottom: 1px solid #dceadd99;
+  background: linear-gradient(
+    #b3c1b64d,
+    #ecf7e75e 30%,
+    #556a6455 55%,
+    #d4dfce88
+  );
+  box-shadow:
+    0 3px 4px #0009,
+    inset 0 2px 0 #ffffff66;
+  pointer-events: none;
+}
+.displayFrame {
+  position: absolute;
+  left: 10%;
+  right: 13.5%;
+  top: 12%;
+  bottom: 15%;
+  z-index: 4;
+  padding: 4px;
+  background: linear-gradient(
+    132deg,
+    #6b7f7c,
+    #d7e0cf 18%,
+    #52666a 22%,
+    #2f3e40 75%,
+    #a1b0a8
+  );
+  box-shadow:
+    0 0 0 2px #030b10,
+    3px 4px 3px #000b,
+    -1px -1px 1px #a5b7a0;
+}
+.lcd {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background: #142571;
+  box-shadow: inset 0 0 7px #0009;
+}
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.pixelMatrix {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, #04091d33 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, #04091d25 0 1px, transparent 1px 3px);
+  box-shadow: inset 0 0 8px 2px #020b2b66;
+}
+.glassReflection {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(122deg, #b9ddff24, transparent 50%, #52a3ff0d);
+  box-shadow: inset 0 1px 1px #dcf6ff50;
+}
+.controls {
+  position: absolute;
+  z-index: 6;
+  bottom: 2%;
+  left: 20%;
+  right: 16%;
+  display: flex;
+  justify-content: space-between;
+  height: 10.5%;
+}
+.controls button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  padding: 0 1px;
+  background: transparent;
+  cursor: pointer;
+}
+.keycap,
+.sideControls button {
+  display: block;
+  width: 21px;
+  height: 21px;
+  border-radius: 5px;
+  border: 2px solid #596460;
+  background: linear-gradient(135deg, #37413f, #15201f 64%, #29332f);
+  box-shadow:
+    inset 1px 1px 1px #b5c4b633,
+    inset -1px -1px 1px #000,
+    1px 2px 0 #020806,
+    0 0 0 1px #a8b5a480;
+  transition:
+    transform 100ms,
+    box-shadow 100ms;
+}
+.keyLabel {
+  color: #c8d5c8;
+  font:
+    14px/1 Arial,
+    sans-serif;
+  text-shadow: 0 1px #000;
+}
+.controls button[aria-pressed="true"] .keyLabel {
+  color: #c2e9b9;
+}
+.controls button:hover .keycap,
+.sideControls button:hover {
+  background: linear-gradient(135deg, #53605a, #22302c);
+}
+.controls button:active .keycap,
+.sideControls button:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 1px 3px #000;
+}
+.controls button:focus-visible,
+.sideControls button:focus-visible {
+  outline: 2px solid #a1daff;
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+.sideControls {
+  position: absolute;
+  z-index: 6;
+  right: 3%;
+  top: 20%;
+  bottom: 19%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+}
+.sideControls span {
+  color: #b8c8b8;
+  font: 24px/12px monospace;
+}
+.sideControls button {
+  cursor: pointer;
+  width: 19px;
+  height: 23px;
+}
+.sideControls button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.screw {
+  position: absolute;
+  z-index: 6;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid #9caba2;
+  background: linear-gradient(
+    135deg,
+    #ced8cf,
+    #728277 45%,
+    #2b3934 50%,
+    #c5d2c7 58%
+  );
+  box-shadow: 0 1px 2px #000;
+}
+.screwLeft {
+  left: 4%;
+  top: 10%;
+}
+.screwRight {
+  right: 4%;
+  bottom: 5%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .badge {
+    transform: none;
+    transition: none;
+  }
+  .keycap,
+  .sideControls button {
+    transition: none;
+  }
+}
+
+/* The physical badge is the cell itself: no inset stage or surrounding tile. */
+.stage {
+  padding: 0;
+  background: none;
+  overflow: visible;
+}
+.stage::after {
+  display: none;
+}
+.badge {
+  max-width: none;
+  max-height: 100%;
+  min-height: 0;
+  height: calc(100% - 8px);
+  align-self: start;
+  transform: none;
+  filter: drop-shadow(2px 6px 1px #081714aa)
+    drop-shadow(6px 18px 14px #08171433);
+}
+.nameplate {
+  container-type: size;
+  inset: 0 0 var(--badge-hardware-height, 44%);
+  border-radius: 24px 24px 3px 3px;
+  background: linear-gradient(
+    125deg,
+    color-mix(in srgb, var(--badge-shell, #1c292b), white 8%),
+    var(--badge-shell, #1c292b) 55%,
+    color-mix(in srgb, var(--badge-shell, #1c292b), black 10%)
+  );
+  box-shadow:
+    inset 1px 1px 1px #e8f1de55,
+    inset -3px 0 2px #0009,
+    0 4px 0 #111b19,
+    2px 5px 0 #4a5a50;
+}
+.slot {
+  background: var(--background, #e8e8df);
+}
+.slot::before {
+  background: var(--background, #e8e8df);
+}
+.brandSymbol {
+  position: absolute;
+  width: min(15cqw, 16cqh);
+  left: 50%;
+  transform: translateX(-50%);
+  top: 14%;
+  color: var(--badge-ink, #d1e3d4);
+  filter: drop-shadow(0 2px 1px #0009);
+}
+.wordmark {
+  top: 31%;
+  color: var(--badge-ink, #e1e6df);
+  font-size: clamp(32px, min(21cqw, 21cqh), 80px);
+}
+.wordmark span {
+  color: inherit;
+}
+.subtitle {
+  top: 53%;
+  color: var(--badge-muted, #b0c3b7);
+  font-size: 8px;
+}
+.illustration {
+  top: 29%;
+  height: 65%;
+  color: var(--badge-muted, #bac5ba);
+}
+.illustration g {
+  stroke: currentColor;
+}
+.edition {
+  bottom: 6%;
+  right: 5%;
+  color: var(--badge-muted, #a4b5a9);
+  font-size: 6px;
+}
+.hardware {
+  height: var(--badge-hardware-height, 44%);
+}
+.pcb {
+  background: var(--badge-shell, #172325);
+}
+.keyLabel {
+  color: var(--badge-ink, #d8e6d9);
+}
+.controls {
+  left: 12%;
+  right: 12%;
+}
+.sideControls button {
+  width: 24px;
+  height: 25px;
+}
+.serviceControls {
+  position: absolute;
+  bottom: 14%;
+  right: 6%;
+  display: grid;
+  gap: 10px;
+  z-index: 2;
+}
+.serviceControls button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--badge-ink, #d1e3d4);
+  font: 8px monospace;
+  letter-spacing: 1px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+.serviceControls button span {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 21px;
+  font: 13px monospace;
+  border-radius: 4px;
+  border: 2px solid #829187;
+  background: linear-gradient(135deg, #394c44, #15231d);
+  box-shadow:
+    1px 3px 0 #0009,
+    inset 0 1px #ffffff30;
+}
+.serviceControls button:active span {
+  transform: translateY(2px);
+}
+.serviceControls button:focus-visible {
+  outline: 2px solid var(--badge-ink, #d1e3d4);
+  outline-offset: 4px;
+}
+.oscillator {
+  position: absolute;
+  right: 16%;
+  top: 4%;
+  color: #27372e;
+  font: 5px monospace;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: linear-gradient(#d5ded2, #7c9283);
+  box-shadow: 0 2px 2px #000;
+}
+.usbPort {
+  position: absolute;
+  left: 3%;
+  top: 10%;
+  width: 17px;
+  height: 11px;
+  background: #111d17;
+  border: 3px solid #9aac9c;
+  border-radius: 3px;
+  box-shadow:
+    inset 0 0 0 1px #1d2d25,
+    0 2px 2px #000;
+}
+.resistors {
+  position: absolute;
+  right: 4%;
+  top: 8%;
+  display: flex;
+  gap: 4px;
+}
+.resistors i {
+  width: 4px;
+  height: 9px;
+  border-block: 2px solid #c0cab7;
+  background: #b0a06a;
+  box-shadow: 0 1px 1px #000;
+}
+@media (prefers-reduced-motion: reduce) {
+  .badge {
+    transform: none;
+  }
+}
+@media (forced-colors: active) {
+  .keycap,
+  .sideControls button,
+  .serviceControls button span {
+    border-color: ButtonText;
+  }
+}

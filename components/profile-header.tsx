@@ -21,10 +21,12 @@ const HATCH_BG =
   "repeating-linear-gradient(45deg, color-mix(in srgb, var(--grid-ink,#767165) 14%, transparent) 0, color-mix(in srgb, var(--grid-ink,#767165) 22%, transparent) 1px, transparent 0, transparent 50%)"
 
 const FLIP_SENTENCES = [
-  "Designer — engineer",
-  "Systems for color",
+  "Product Designer",
+  "Fullstack Developer",
+  "Software Engineer",
+  "App Developer",
+  "Harness Engineer",
   "Editorial, grid-driven",
-  "One picker theming",
 ]
 
 function TextFlip({
@@ -184,7 +186,10 @@ export function ProfileHeader() {
           sheet — avatar bottom lands on the sheet bottom (= the
           bottom-most anchor height). */}
       <div
-        className={cn("relative mx-auto flex max-w-7xl flex-col border-x", LINE)}
+        className={cn(
+          "relative mx-auto flex max-w-7xl flex-col border-x",
+          LINE
+        )}
         style={{ minHeight: "inherit" }}
       >
         {/* Availability strip: very top, ruled top and bottom */}
@@ -245,7 +250,7 @@ export function ProfileHeader() {
                 className={cn("flex items-stretch gap-3 border-t pl-4", LINE)}
               >
                 <TextFlip
-                  className="shrink-0 font-mono text-xl text-balance text-foreground opacity-55"
+                  className="shrink-0 font-mono text-xl text-balance text-foreground"
                   interval={1.5}
                 >
                   {FLIP_SENTENCES}
@@ -289,14 +294,14 @@ export function ProfileHeader() {
                       LINE
                     )}
                   >
-                    <p className="max-w-2xl font-mono text-xl text-balance text-foreground opacity-80">
+                    <p className="max-w-2xl font-mono text-xl text-balance text-foreground">
                       <Rich
                         size="lg"
                         className="text-xl"
                         text="Designer–engineer building **editorial, grid-driven portfolios** where **one color** drives everything."
                       />
                     </p>
-                    <p className="max-w-2xl font-mono text-xl text-balance text-foreground opacity-80">
+                    <p className="max-w-2xl font-mono text-xl text-balance text-foreground">
                       <Rich
                         size="lg"
                         className="text-xl"
@@ -361,7 +366,7 @@ export function ProfileHeader() {
         {/* Avatar image: pinned absolute to the max-width section —
             bottom/right flush to its edges, top clears the smallest
             golden arc (21 of the 233-unit height). */}
-        <div className="absolute right-0 bottom-0 top-[calc(var(--figH)*21/233)] z-10 aspect-square w-auto overflow-visible max-md:top-auto max-md:right-4 max-md:bottom-4 max-md:h-28 max-md:w-28">
+        <div className="absolute top-[calc(var(--figH)*21/233)] right-0 bottom-0 z-10 aspect-square w-auto overflow-visible max-md:top-auto max-md:right-4 max-md:bottom-4 max-md:h-28 max-md:w-28">
           <Image
             className="h-full w-full rounded-full object-cover ring-1 ring-border ring-offset-0 ring-offset-background select-none"
             alt="Sahil Mengji"

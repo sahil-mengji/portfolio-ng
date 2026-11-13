@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "../styles/scroll-fade-effect.css";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -38,6 +40,7 @@ body::-webkit-scrollbar {
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
+  --color-accent-muted: var(--accent-muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -48,6 +51,12 @@ body::-webkit-scrollbar {
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-surface: var(--surface);
+  --color-code: var(--code);
+  --color-code-foreground: var(--code-foreground);
+  --color-code-number: var(--code-number);
+  --color-code-highlight: var(--code-highlight);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
   --radius-sm: calc(var(--radius) * 0.6);
@@ -60,12 +69,23 @@ body::-webkit-scrollbar {
 }
 
 :root {
+  --text: var(--foreground);
+  --card-text: var(--card-foreground);
+  --card-muted: var(--muted-foreground);
+  --effect-surface: #111b1c;
+  --effect-text: #d3e9e2;
   --background: #edeefd;
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
+  --surface: oklch(0.985 0 0);
+  --surface-foreground: oklch(0.141 0.005 285.823);
+  --code: var(--surface);
+  --code-foreground: var(--surface-foreground);
+  --code-number: oklch(0.705 0.015 286.067);
+  --code-highlight: oklch(0.9584 0.0013 286.37);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
@@ -73,6 +93,7 @@ body::-webkit-scrollbar {
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.9 0.08 150);
+  --accent-muted: color-mix(in oklab, var(--accent) 50%, transparent);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
@@ -106,6 +127,12 @@ body::-webkit-scrollbar {
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
+  --surface: oklch(0.21 0.006 285.885);
+  --surface-foreground: oklch(0.985 0 0);
+  --code: var(--surface);
+  --code-foreground: var(--surface-foreground);
+  --code-number: oklch(0.552 0.016 285.938);
+  --code-highlight: oklch(0.274 0.006 286.033);
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
   --secondary: oklch(0.269 0 0);
@@ -113,6 +140,7 @@ body::-webkit-scrollbar {
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
+  --accent-muted: color-mix(in oklab, var(--accent) 20%, transparent);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
@@ -216,9 +244,11 @@ body::-webkit-scrollbar {
 .bento-resume {
   grid-column: span 3;
   grid-row: span 5;
+  min-height: 0;
+  max-height: 100%;
 }
 .bento-showcase {
-  grid-column: span 3;
+  grid-column: span 4;
   grid-row: span 2;
 }
 .bento-library {
@@ -230,7 +260,7 @@ body::-webkit-scrollbar {
   grid-row: span 1;
 }
 .bento-projects {
-  grid-column: span 2;
+  grid-column: span 3;
   grid-row: span 2;
 }
 .bento-experiments {
@@ -293,27 +323,29 @@ body::-webkit-scrollbar {
 /* ── Bento map — small clouds drifting diagonally, tilted into the map plane ── */
 @keyframes bento-cloud-drift {
   from {
-    transform: translate(-180px, 48px) rotateX(55deg);
+    transform: translate(-70px, 24px) rotateX(55deg);
   }
   to {
-    transform: translate(560px, -48px) rotateX(55deg);
+    transform: translate(85px, -24px) rotateX(55deg);
   }
 }
 @keyframes bento-cloud-drift-b {
   from {
-    transform: translate(-180px, -36px) rotateX(55deg);
+    transform: translate(-60px, -20px) rotateX(55deg);
   }
   to {
-    transform: translate(560px, 44px) rotateX(55deg);
+    transform: translate(70px, 24px) rotateX(55deg);
   }
 }
 .animate-bento-cloud {
   animation-name: bento-cloud-drift;
+  animation-direction: alternate;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
 }
 .animate-bento-cloud-b {
   animation-name: bento-cloud-drift-b;
+  animation-direction: alternate;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
 }
@@ -517,6 +549,19 @@ body::-webkit-scrollbar {
   @apply relative after:absolute after:bottom-0 after:left-[-100vw] after:-z-1 after:h-px after:w-[200vw] after:bg-line;
 }
 
+@utility prose-ncdai {
+  @apply prose-headings:tracking-tight prose-headings:text-balance prose-h2:font-semibold;
+  @apply prose-a:font-normal prose-a:wrap-break-word prose-a:text-foreground prose-a:link-underline;
+  @apply prose-code:rounded-md prose-code:border prose-code:bg-muted/50 prose-code:px-[0.3rem] prose-code:py-[0.2rem] prose-code:text-sm prose-code:font-normal prose-code:before:content-none prose-code:after:content-none;
+  @apply prose-strong:font-medium;
+  @apply prose-hr:border-line;
+  @apply prose-blockquote:border-l prose-blockquote:border-line prose-blockquote:font-normal prose-blockquote:text-muted-foreground prose-blockquote:not-italic prose-blockquote:[&_p:first-of-type]:before:content-none prose-blockquote:[&_p:last-of-type]:after:content-none;
+}
+
+@utility code-inline {
+  @apply rounded-md border bg-muted/50 px-1.5 py-0.5 font-mono text-[0.8125rem] whitespace-pre-wrap in-data-table-nowrap:whitespace-nowrap;
+}
+
 /* Shared-element blog morphs (next-view-transitions): the card title
    flies into the article title via matching view-transition-name.
    Named elements get a longer morph; the rest of the page fades in
@@ -567,82 +612,108 @@ body::-webkit-scrollbar {
   }
 }
 
-@layer base {
-  @keyframes show-top-mask {
-    to {
-      --top-mask-height: var(--mask-height);
+@layer components {
+  [data-rehype-pretty-code-figure] {
+    @apply relative my-[1.25em] rounded-xl bg-code text-code-foreground;
+
+    pre {
+      @apply no-scrollbar overflow-x-auto overscroll-x-contain px-4 py-4 has-data-line-numbers:px-0;
+    }
+
+    code {
+      @apply min-w-full font-mono text-sm;
+    }
+
+    [data-line] {
+      @apply py-0.5 pr-(--code-padding-right,0);
     }
   }
 
-  @keyframes hide-bottom-mask {
-    to {
-      --bottom-mask-height: 0px;
-    }
+  [data-line] span {
+    @apply text-(--shiki-light) dark:text-(--shiki-dark);
   }
 
-  @keyframes show-left-mask {
-    to {
-      --left-mask-width: var(--mask-width);
-    }
+  [data-rehype-pretty-code-title] {
+    @apply flex items-center gap-3 border-b px-4 py-2.5 pe-10 text-sm text-muted-foreground group-data-[slot=collapsible]/collapsible:pe-20 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground;
   }
 
-  @keyframes hide-right-mask {
-    to {
-      --right-mask-width: 0px;
-    }
+  [data-line-numbers] {
+    counter-reset: line;
+  }
+
+  [data-line-numbers] > [data-line]::before {
+    counter-increment: line;
+    content: counter(line);
+    @apply sticky left-0 inline-block w-16 bg-code pe-6 text-right text-sm text-code-number;
+  }
+
+  [data-line-numbers] [data-highlighted-line][data-line]::before {
+    @apply bg-code-highlight;
+  }
+
+  [data-highlighted-line] {
+    @apply bg-code-highlight;
+  }
+
+  [data-fade-overlay] {
+    @apply pointer-events-none absolute top-0 right-0 z-1 rounded-tr-xl;
+
+    --fade-linear-gradient: linear-gradient(
+      to right,
+      transparent 0,
+      color-mix(in oklab, var(--fade-color, var(--background)) 20%, transparent)
+        10px,
+      color-mix(in oklab, var(--fade-color, var(--background)) 50%, transparent)
+        25px,
+      color-mix(in oklab, var(--fade-color, var(--background)) 80%, transparent)
+        35px,
+      var(--fade-color, var(--background)) 45px
+    );
+
+    --fade-radial-gradient: radial-gradient(
+      ellipse at top right,
+      var(--fade-color, var(--background)) 30%,
+      color-mix(in oklab, var(--fade-color, var(--background)) 80%, transparent)
+        40%,
+      color-mix(in oklab, var(--fade-color, var(--background)) 50%, transparent)
+        50%,
+      color-mix(in oklab, var(--fade-color, var(--background)) 20%, transparent)
+        60%,
+      transparent 70%
+    );
+
+    width: var(--fade-width, 6rem);
+    height: var(--fade-height, 2.5rem);
+    background: var(--fade-background, var(--fade-linear-gradient));
   }
 }
 
-@property --top-mask-height {
-  syntax: "<length>";
-  inherits: true;
-  initial-value: 0px;
+/* Explicit focus ink follows the active surface; reduced motion also covers
+   decorative CSS animations outside the React motion components. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring, currentColor);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .animate-bento-cloud, .animate-bento-cloud-b { animation-play-state: paused !important; }
+}
+@media (forced-colors: active) {
+  :where(a, button, input, select, textarea):focus-visible { outline: 2px solid Highlight; }
 }
 
-@property --bottom-mask-height {
-  syntax: "<length>";
-  inherits: true;
-  initial-value: 64px;
+/* Theme changes reveal the new page through a single circular clip. */
+html[data-theme-transition="circle"] * {
+  view-transition-name: none !important;
 }
-
-@property --left-mask-width {
-  syntax: "<length>";
-  inherits: true;
-  initial-value: 0px;
+html[data-theme-transition="circle"]::view-transition-group(root),
+html[data-theme-transition="circle"]::view-transition-old(root),
+html[data-theme-transition="circle"]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
-
-@property --right-mask-width {
-  syntax: "<length>";
-  inherits: true;
-  initial-value: 64px;
-}
-
-@utility scroll-fade-effect-x {
-  --mask-width: 64px;
-  --mask-offset-left: 0px;
-  --mask-offset-right: 0px;
-  --scroll-buffer: 2rem;
-
-  mask-image:
-    linear-gradient(to left, transparent, black 90%),
-    linear-gradient(to right, transparent 0%, black 100%),
-    linear-gradient(black, black);
-
-  mask-size:
-    var(--left-mask-width) 100%,
-    var(--right-mask-width) 100%,
-    100% 100%;
-  mask-repeat: no-repeat, no-repeat, no-repeat;
-  mask-position:
-    var(--mask-offset-left) 0,
-    calc(100% - var(--mask-offset-right)) 0,
-    0 0;
-  mask-composite: exclude;
-
-  animation-name: show-left-mask, hide-right-mask;
-  animation-timeline: scroll(self inline), scroll(self inline);
-  animation-range:
-    0 var(--scroll-buffer),
-    calc(100% - var(--scroll-buffer)) 100%;
-  animation-fill-mode: both;
+html[data-theme-transition="circle"]::view-transition-old(root) { z-index: 1; }
+html[data-theme-transition="circle"]::view-transition-new(root) {
+  z-index: 2;
+  transform-origin: var(--reveal-x) var(--reveal-y);
 }

@@ -47,9 +47,18 @@ export async function GET(request: Request) {
             }
         });
         if (!response.ok) {
-            throw new Error(`GitHub API responded with status: ${response.status}`);
+            return NextResponse.json(
+                { error: `GitHub API responded with status: ${response.status}` },
+                { status: 502 }
+            );
         }
         const data = await response.json();
+        if (data?.errors?.length) {
+            return NextResponse.json(
+                { error: data.errors[0]?.message ?? 'GitHub API error' },
+                { status: 502 }
+            );
+        }
         const collection = data?.data?.user?.contributionsCollection;
         const calendar = collection?.contributionCalendar;
         if (!calendar) {
@@ -61,38 +70,7 @@ export async function GET(request: Request) {
             pullRequests: collection?.totalPullRequestContributions ?? 0,
             reviews: collection?.totalPullRequestReviewContributions ?? 0,
         };
-        // All-time + yearly totals (one cheap query per year, cached 1h)
-        const currentYear = new Date().getFullYear();
-        const yearlyTotals: Record<number, number> = {};
-        let allTimeTotal = 0;
-        for (let year = 2020; year <= currentYear; year++) {
-            try {
-                const yr = await fetch('https://api.github.com/graphql', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        query: `query {
-                            user(login: "${username}") {
-                                contributionsCollection(from: "${year}-01-01T00:00:00Z", to: "${year}-12-31T23:59:59Z") {
-                                    contributionCalendar { totalContributions }
-                                }
-                            }
-                        }`
-                    }),
-                    next: { revalidate: CACHE_TTL, tags: [`github-contributions-${username}`] }
-                });
-                const yd = await yr.json();
-                const t = yd?.data?.user?.contributionsCollection?.contributionCalendar?.totalContributions || 0;
-                yearlyTotals[year] = t;
-                allTimeTotal += t;
-            } catch {
-                yearlyTotals[year] = 0;
-            }
-        }
-        return NextResponse.json({ ...calendar, yearlyTotals, allTimeTotal, totals }, {
+        return NextResponse.json({ ...calendar, totals }, {
             headers: {
                 'Cache-Control': `public, max-age=${CACHE_TTL}, stale-while-revalidate=${CACHE_TTL * 24}`
             }

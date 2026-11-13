@@ -1,17 +1,45 @@
 import { Link } from "next-view-transitions"
 import { MDXRemote } from "next-mdx-remote/rsc"
 import remarkGfm from "remark-gfm"
+import rehypeExternalLinks from "rehype-external-links"
+import rehypeSlug from "rehype-slug"
+import {
+  rehypeCodeRawString,
+  rehypeHighlightCode,
+  rehypeHighlightCodeRawString,
+} from "@/lib/rehype-code-block"
 import { Heading, Body, Link as TextLink, Caption } from "@/components/ui/text"
+import { Prose } from "@/components/ui/typography"
 import { SiteShell } from "@/components/site-shell"
 import { mdxComponents } from "@/components/mdx-components"
 import { BlogMinimap } from "@/components/blog-minimap"
 import { BlogBackButton } from "@/components/blog-back-button"
-import { blogPosts } from "@/lib/dummy-data"
+import { PostKeyboardShortcuts } from "@/components/post-keyboard-shortcuts"
+import { PostShareMenu } from "@/components/post-share-menu"
+import { LLMCopyButtonWithViewOptions } from "@/components/post-page-actions"
+import { SITE_INFO } from "@/config/site"
+import type { BlogPost } from "@/lib/dummy-data"
+import { getBlogPost, getBlogPosts } from "@/lib/blog"
 
 // Static bodies — prerender every post (also sidesteps next-themes'
 // inline bootstrap script, which Next 16 rejects during dynamic renders).
 export function generateStaticParams() {
-  return blogPosts.map((p) => ({ slug: p.slug }))
+  return getBlogPosts().map((p) => ({ slug: p.slug }))
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  const post = getBlogPost(slug)
+  if (!post) return { title: "Not found" }
+  return {
+    title: post.title,
+    description: post.excerpt,
+    alternates: { canonical: `/blogs/${slug}` },
+  }
 }
 
 export default async function BlogPostPage({
@@ -20,7 +48,7 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const post = blogPosts.find((p) => p.slug === slug)
+  const post = getBlogPost(slug)
 
   if (!post) {
     return (
@@ -36,12 +64,13 @@ export default async function BlogPostPage({
     )
   }
 
+  const blogPosts = getBlogPosts()
   const idx = blogPosts.findIndex((p) => p.slug === slug)
   const prevPost = idx > 0 ? blogPosts[idx - 1] : undefined
   const nextPost =
     idx >= 0 && idx < blogPosts.length - 1 ? blogPosts[idx + 1] : undefined
   const taken = new Set([slug, prevPost?.slug, nextPost?.slug].filter(Boolean))
-  const sharedTags = (p: (typeof blogPosts)[number]) =>
+  const sharedTags = (p: BlogPost) =>
     p.tags.filter((t) => post.tags.includes(t)).length
   const recommended = [...blogPosts]
     .filter((p) => !taken.has(p.slug))
@@ -50,6 +79,26 @@ export default async function BlogPostPage({
 
   return (
     <SiteShell showHatch={false}>
+      {/* Structured metadata for search engines (BlogPosting). */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
+            headline: post.title,
+            description: post.excerpt,
+            image: post.image,
+            url: `${SITE_INFO.url}/blogs/${slug}`,
+            datePublished: new Date(post.date).toISOString(),
+            author: { "@type": "Person", name: SITE_INFO.name },
+          }).replace(/</g, "\\u003c"),
+        }}
+      />
+      <PostKeyboardShortcuts
+        previous={prevPost ? `/blogs/${prevPost.slug}` : null}
+        next={nextPost ? `/blogs/${nextPost.slug}` : null}
+      />
       {/* Left heading minimap (hover reveals the nested tree). */}
       <BlogMinimap targetId="blog-article" />
       {/* Centered reading column: title top, meta, tags, description, MDX body. */}
@@ -60,6 +109,11 @@ export default async function BlogPostPage({
         <BlogBackButton />
 
         <div></div>
+        {/* Page actions: copy-as-markdown + AI/share menu. */}
+        <div className="flex items-center gap-2 pb-2">
+          <LLMCopyButtonWithViewOptions markdownUrl={`/blogs/${slug}/raw`} />
+          <PostShareMenu title={post.title} url={`/blogs/${slug}`} />
+        </div>
         <Caption style={{ marginTop: "clamp(2rem, 4vw, 3rem)" }}>
           {post.date}
         </Caption>
@@ -93,13 +147,27 @@ export default async function BlogPostPage({
               "color-mix(in srgb, var(--accent, #4f46e5) 25%, transparent)",
           }}
         />
-        <div className="space-y-5">
+        <Prose>
           <MDXRemote
             source={post.body}
             components={mdxComponents}
-            options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
+            options={{
+              mdxOptions: {
+                remarkPlugins: [remarkGfm],
+                rehypePlugins: [
+                  [
+                    rehypeExternalLinks,
+                    { target: "_blank", rel: "nofollow noopener" },
+                  ],
+                  rehypeSlug,
+                  rehypeCodeRawString,
+                  rehypeHighlightCode,
+                  rehypeHighlightCodeRawString,
+                ],
+              },
+            }}
           />
-        </div>
+        </Prose>
         {/* Bottom navigation: prev / next across the index, plus
             tag-related recommended reads. The ← Blogs link lives only
             at the top. */}
@@ -110,31 +178,67 @@ export default async function BlogPostPage({
               "color-mix(in srgb, var(--accent, #4f46e5) 25%, transparent)",
           }}
         />
-        <nav
-          aria-label="More posts"
-          className="flex flex-wrap justify-between gap-4"
-        >
-          <div className="min-w-0 flex-1">
+        <nav aria-label="More posts" className="mt-24! mb-24">
+          <Caption>More posts</Caption>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {prevPost ? (
               <Link
+                key={prevPost.slug}
                 href={`/blogs/${prevPost.slug}`}
-                className="underline underline-offset-4"
+                className="group flex min-w-0 items-center gap-4 rounded-2xl border p-5 transition-all hover:scale-[1.01]"
+                style={{
+                  background:
+                    "color-mix(in srgb, var(--surface, #f4f4f2) 88%, transparent)",
+                  borderColor:
+                    "color-mix(in srgb, var(--accent, #4f46e5) 18%, transparent)",
+                }}
               >
-                <Caption>← Prev</Caption>
-                <Body className="mt-1 font-medium">{prevPost.title}</Body>
+                <span
+                  aria-hidden
+                  className="font-mono text-2xl opacity-40 transition-transform duration-300 group-hover:-translate-x-1"
+                >
+                  ←
+                </span>
+                <span className="min-w-0">
+                  <Caption>Prev</Caption>
+                  <Body className="mt-1 truncate font-medium">
+                    {prevPost.title}
+                  </Body>
+                  <Caption className="mt-1 block opacity-60">
+                    {prevPost.date} · {prevPost.readingTime}
+                  </Caption>
+                </span>
               </Link>
             ) : (
               <span />
             )}
-          </div>
-          <div className="min-w-0 flex-1 text-right">
             {nextPost ? (
               <Link
+                key={nextPost.slug}
                 href={`/blogs/${nextPost.slug}`}
-                className="underline underline-offset-4"
+                className="group flex min-w-0 items-center justify-end gap-4 rounded-2xl border p-5 text-right transition-all hover:scale-[1.01]"
+                style={{
+                  background:
+                    "color-mix(in srgb, var(--surface, #f4f4f2) 88%, transparent)",
+                  borderColor:
+                    "color-mix(in srgb, var(--accent, #4f46e5) 18%, transparent)",
+                }}
               >
-                <Caption>Next →</Caption>
-                <Body className="mt-1 font-medium">{nextPost.title}</Body>
+                <span className="min-w-0">
+                  <Caption>Next</Caption>
+                  <Body className="mt-1 truncate font-medium">
+                    {nextPost.title}
+                  </Body>
+                  <Caption className="mt-1 block opacity-60">
+                    {nextPost.date} · {nextPost.readingTime}
+                  </Caption>
+                </span>
+                <span
+                  aria-hidden
+                  className="font-mono text-2xl opacity-40 transition-transform duration-300 group-hover:translate-x-1"
+                >
+                  →
+                </span>
               </Link>
             ) : (
               <span />
@@ -142,7 +246,7 @@ export default async function BlogPostPage({
           </div>
         </nav>
         {recommended.length > 0 && (
-          <div>
+          <div className="mb-16">
             <Caption>Recommended</Caption>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
               {recommended.map((r) => (

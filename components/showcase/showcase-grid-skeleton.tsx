@@ -9,16 +9,22 @@ const GUIDE = "color-mix(in srgb, var(--grid-ink,#767165) 32%, transparent)"
 export function ShowcaseGridSkeleton() {
   return (
     <div className="relative mx-auto w-full max-w-7xl overflow-hidden border-line p-6">
-      <div className="columns-1 gap-6 sm:columns-2 lg:columns-3">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-6">
         {Array.from({ length: 8 }).map((_, index) => (
-          <ShowcaseCardSkeleton key={index} index={index} />
+          <ShowcaseCardSkeleton key={index} index={index} wide={index === 0} />
         ))}
       </div>
     </div>
   )
 }
 
-function ShowcaseCardSkeleton({ index }: { index: number }) {
+function ShowcaseCardSkeleton({
+  index,
+  wide,
+}: {
+  index: number
+  wide?: boolean
+}) {
   // Rotate through different aspect ratios to mimic the masonry feel
   const aspectRatios = [
     "aspect-[4/3]",
@@ -29,7 +35,7 @@ function ShowcaseCardSkeleton({ index }: { index: number }) {
   const aspectRatio = aspectRatios[index % aspectRatios.length]
 
   return (
-    <div className="mb-6 break-inside-avoid">
+    <div className={cn(wide && "lg:col-span-3", !wide && "lg:col-span-2")}>
       <div className={cn("relative border border-line", aspectRatio)}>
         {/* Grid lines mimic */}
         <div

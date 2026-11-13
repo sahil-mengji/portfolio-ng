@@ -83,31 +83,38 @@ function toAppleStyle(raw: any): MapStyleOption {
     else if (id.includes("boundary")) set(APPLE.boundary)
   }
   // Building extrusions: very light gray-blue 3D perspectives at higher zooms
-  const topIdx = layers.findIndex((l: any) => l.id === "building-top")
-  const extrusion = {
-    id: "building-extrusion",
-    type: "fill-extrusion",
-    source: "carto",
-    "source-layer": "building",
-    minzoom: 14,
-    paint: {
-      "fill-extrusion-color": APPLE.extrusion,
-      "fill-extrusion-height": [
-        "interpolate",
-        ["linear"],
-        ["zoom"],
-        14,
-        0,
-        15,
-        12,
-        16,
-        30,
-      ],
-      "fill-extrusion-base": 0,
-      "fill-extrusion-opacity": 0.55,
-    },
+  // Carto style revisions may rename their vector source. Reuse the source
+  // configured for the style's own building layer instead of assuming `carto`.
+  const buildingLayer = layers.find(
+    (layer: any) => layer["source-layer"] === "building" && layer.source
+  )
+  if (buildingLayer && style.sources?.[buildingLayer.source]) {
+    const topIdx = layers.findIndex((l: any) => l.id === "building-top")
+    const extrusion = {
+      id: "building-extrusion",
+      type: "fill-extrusion",
+      source: buildingLayer.source,
+      "source-layer": buildingLayer["source-layer"],
+      minzoom: 14,
+      paint: {
+        "fill-extrusion-color": APPLE.extrusion,
+        "fill-extrusion-height": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          14,
+          0,
+          15,
+          12,
+          16,
+          30,
+        ],
+        "fill-extrusion-base": 0,
+        "fill-extrusion-opacity": 0.55,
+      },
+    }
+    layers.splice(topIdx === -1 ? layers.length : topIdx + 1, 0, extrusion)
   }
-  layers.splice(topIdx === -1 ? layers.length : topIdx + 1, 0, extrusion)
   return style
 }
 
@@ -115,30 +122,18 @@ const hideIfBroken = (e: React.SyntheticEvent<HTMLImageElement>) => {
   e.currentTarget.style.display = "none"
 }
 
-function hexToRgba(hex: string, a: number) {
-  const h = hex.replace("#", "")
-  const f =
-    h.length === 3
-      ? h
-          .split("")
-          .map((c) => c + c)
-          .join("")
-      : h
-  const n = parseInt(f, 16)
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`
-}
-
 // Cast shadow, offset down-right so clouds look like they float above the map
 const CLOUD_SHADOW = "drop-shadow-[16px_22px_26px_rgba(80,100,120,0.4)]"
 // Tilted to sit in the map's perspective plane (map pitch 65°)
 const CLOUD_TILT = "rotate-x-[55deg]"
 
-// Small clouds drifting diagonally across the map (box is 488px wide)
+// Small clouds drifting diagonally across the map.
 const DRIFTERS = [
   {
     src: "/clouds/cloud-2.png",
-    top: "4%",
-    width: 96,
+    top: "5%",
+    left: "20%",
+    width: 108,
     duration: "27s",
     delay: "-6s",
     opacity: 0.9,
@@ -146,8 +141,9 @@ const DRIFTERS = [
   },
   {
     src: "/clouds/cloud-3.png",
-    top: "48%",
-    width: 64,
+    top: "40%",
+    left: "52%",
+    width: 86,
     duration: "38s",
     delay: "-18s",
     opacity: 0.85,
@@ -156,7 +152,8 @@ const DRIFTERS = [
   {
     src: "/clouds/cloud-2.png",
     top: "70%",
-    width: 48,
+    left: "74%",
+    width: 72,
     duration: "46s",
     delay: "-30s",
     opacity: 0.7,
@@ -180,7 +177,13 @@ export function BentoMapBox() {
   const { color, isOverridden } = useThemeColorContext()
   // Theme tone bands from the picked color's OKLCH lightness
   const themeL = hexToOklch(color).l
-  const tone = !isOverridden ? "default" : themeL >= 0.72 ? "light" : themeL <= 0.42 ? "dark" : "mid"
+  const tone = !isOverridden
+    ? "default"
+    : themeL >= 0.72
+      ? "light"
+      : themeL <= 0.42
+        ? "dark"
+        : "mid"
 
   useEffect(() => {
     let cancelled = false
@@ -210,7 +213,11 @@ export function BentoMapBox() {
         {/* Map — full-bleed, Apple-ish light theme (white bed by default) */}
         <div
           className={`absolute inset-0 ${tone === "default" ? "bg-white" : "bg-card"}`}
-          style={tone === "dark" ? { filter: "invert(1) hue-rotate(180deg)" } : undefined}
+          style={
+            tone === "dark"
+              ? { filter: "invert(1) hue-rotate(180deg)" }
+              : undefined
+          }
         >
           {appleLight || styleFailed ? (
             <Map
@@ -224,8 +231,8 @@ export function BentoMapBox() {
               projection={projection}
               onViewportChange={handleViewport}
               ref={(m) => {
-                // Shift the marker to ~2/3 width: box is 488px, left pad 163px
-                m?.setPadding({ left: 163 })
+                // Keep the city pin clear of the text in the wider cell.
+                m?.setPadding({ left: 160 })
               }}
             >
               <MapMarker longitude={CITY.lng} latitude={CITY.lat}>
@@ -238,8 +245,21 @@ export function BentoMapBox() {
             <div className="absolute inset-0 bg-muted" />
           )}
         </div>
-        {/* Depth blur — horizon blurs, foreground stays sharp */}
-        <div className="pointer-events-none absolute inset-0 z-[3] backdrop-blur-[3px] [mask-image:linear-gradient(to_bottom,black_0%,transparent_60%)]" />
+        {/* A restrained map-only tint leaves the white cloud layer untouched. */}
+        {isOverridden && (
+          <div
+            className="pointer-events-none absolute inset-0 z-[2] mix-blend-color"
+            style={{ background: color, opacity: 0.16 }}
+          />
+        )}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-[4]"
+          style={{
+            background:
+              "linear-gradient(90deg, var(--card) 0%, color-mix(in srgb, var(--card) 96%, transparent) 18%, color-mix(in srgb, var(--card) 84%, transparent) 34%, color-mix(in srgb, var(--card) 55%, transparent) 50%, color-mix(in srgb, var(--card) 18%, transparent) 68%, transparent 88%)",
+          }}
+        />
         {/* Small clouds drifting diagonally across the map */}
         {DRIFTERS.map((c, i) => (
           <img
@@ -248,9 +268,10 @@ export function BentoMapBox() {
             alt=""
             draggable={false}
             onError={hideIfBroken}
-            className={`animate-bento-cloud pointer-events-none absolute left-0 z-[5] ${c.variant} ${CLOUD_SHADOW}`}
+            className={`animate-bento-cloud pointer-events-none absolute z-[5] ${c.variant} ${CLOUD_SHADOW}`}
             style={{
               top: c.top,
+              left: c.left,
               width: c.width,
               opacity: c.opacity,
               animationDuration: c.duration,
@@ -258,35 +279,19 @@ export function BentoMapBox() {
             }}
           />
         ))}
-        {/* Big soft cloud coming from the top-left corner, behind the city text */}
+        {/* A soft cloud bank stays visible over the map horizon */}
         <img
-          src="/clouds/cloud-3.png"
+          src="/clouds/cloud-1.png"
           alt=""
           draggable={false}
           onError={hideIfBroken}
-          className={`pointer-events-none absolute -top-14 -left-22 z-[5] w-[24rem] opacity-100 ${CLOUD_SHADOW} ${CLOUD_TILT}`}
+          className={`pointer-events-none absolute -top-6 -right-12 z-[5] w-[18rem] opacity-100 ${CLOUD_SHADOW} ${CLOUD_TILT}`}
         />
-        {/* Theme tone blends — theme base color, mode per lightness (none by default) */}
-        {tone === "light" && (
-          <div
-            className="pointer-events-none absolute inset-0 z-[6] mix-blend-hue"
-            style={{ background: hexToRgba(color, 0.3) }}
-          />
-        )}
-        {tone === "mid" && (
-          <div
-            className="pointer-events-none absolute inset-0 z-[6] mix-blend-hard-light"
-            style={{ background: hexToRgba(color, 0.3) }}
-          />
-        )}
-        {tone === "dark" && (
-          <div
-            className="pointer-events-none absolute inset-0 z-[6] mix-blend-color-dodge"
-            style={{ background: hexToRgba(color, 0.35) }}
-          />
-        )}
-        {/* Info — top-left */}
-        <div className="relative z-10 flex h-full w-[52%] flex-col justify-start p-5">
+        {/* Text sits directly on the scene, without a rectangular scrim edge. */}
+        <div
+          className="relative z-10 flex h-full w-[52%] flex-col justify-start p-5"
+          style={{ textShadow: "0 1px 12px var(--card), 0 0 6px var(--card)" }}
+        >
           <p className="pt-1 font-mono text-xs text-muted-foreground">
             {CITY.lat.toFixed(4)}° N · {CITY.lng.toFixed(4)}° E
           </p>
@@ -294,7 +299,7 @@ export function BentoMapBox() {
             {CITY.name}
           </h3>
           <p className="flex items-center gap-1 text-lg font-semibold text-muted-foreground">
-            <MapPin size={14} className="shrink-0 text-black" />
+            <MapPin size={14} className="shrink-0" />
             {CITY.country}
           </p>
         </div>

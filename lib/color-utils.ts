@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 export function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
@@ -10,48 +10,72 @@ function rgbToHex(r: number, g: number, b: number): string {
 }
 export function hexToHsl(hex: string): { h: number; s: number; l: number } {
   const { r, g, b } = hexToRgb(hex)
-  const rf = r / 255, gf = g / 255, bf = b / 255
-  const max = Math.max(rf, gf, bf), min = Math.min(rf, gf, bf)
-  let h = 0, s = 0
+  const rf = r / 255,
+    gf = g / 255,
+    bf = b / 255
+  const max = Math.max(rf, gf, bf),
+    min = Math.min(rf, gf, bf)
+  let h = 0,
+    s = 0
   const l = (max + min) / 2
   if (max !== min) {
     const d = max - min
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
     switch (max) {
-      case rf: h = (gf - bf) / d + (gf < bf ? 6 : 0); break
-      case gf: h = (bf - rf) / d + 2; break
-      case bf: h = (rf - gf) / d + 4; break
+      case rf:
+        h = (gf - bf) / d + (gf < bf ? 6 : 0)
+        break
+      case gf:
+        h = (bf - rf) / d + 2
+        break
+      case bf:
+        h = (rf - gf) / d + 4
+        break
     }
     h *= 60
   }
   return { h: Math.round(h), s: Math.round(s * 100), l: Math.round(l * 100) }
 }
 export function hslToHex(h: number, s: number, l: number): string {
-  h /= 360; s /= 100; l /= 100
+  h /= 360
+  s /= 100
+  l /= 100
   let r, g, b
   if (s === 0) r = g = b = l
   else {
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s,
+      p = 2 * l - q
     const hue2rgb = (p: number, q: number, t: number) => {
-      if (t < 0) t += 1; if (t > 1) t -= 1
+      if (t < 0) t += 1
+      if (t > 1) t -= 1
       if (t < 1 / 6) return p + (q - p) * 6 * t
       if (t < 1 / 2) return q
       if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6
       return p
     }
-    r = hue2rgb(p, q, h + 1 / 3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1 / 3)
+    r = hue2rgb(p, q, h + 1 / 3)
+    g = hue2rgb(p, q, h)
+    b = hue2rgb(p, q, h - 1 / 3)
   }
   return rgbToHex(Math.round(r * 255), Math.round(g * 255), Math.round(b * 255))
 }
-function srgbToLinear(c: number) { return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4) }
-function linearToSrgb(c: number) { return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055 }
+function srgbToLinear(c: number) {
+  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+}
+function linearToSrgb(c: number) {
+  return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055
+}
 export function hexToOklch(hex: string): { l: number; c: number; h: number } {
   const { r, g, b } = hexToRgb(hex)
-  const rl = srgbToLinear(r / 255), gl = srgbToLinear(g / 255), bl = srgbToLinear(b / 255)
+  const rl = srgbToLinear(r / 255),
+    gl = srgbToLinear(g / 255),
+    bl = srgbToLinear(b / 255)
   const ll = 0.4122214708 * rl + 0.5363325363 * gl + 0.0514459929 * bl
   const mm = 0.2119034982 * rl + 0.6806995451 * gl + 0.1073969566 * bl
   const ss = 0.0883024619 * rl + 0.2817188376 * gl + 0.6299787005 * bl
-  const l_ = Math.cbrt(ll), m_ = Math.cbrt(mm), s_ = Math.cbrt(ss)
+  const l_ = Math.cbrt(ll),
+    m_ = Math.cbrt(mm),
+    s_ = Math.cbrt(ss)
   const L = 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_
   const a = 1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_
   const bb = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_
@@ -62,16 +86,26 @@ export function hexToOklch(hex: string): { l: number; c: number; h: number } {
   return { l: L, c: C, h }
 }
 export function oklchToHex(l: number, c: number, h: number): string {
-  const hr = (h * Math.PI) / 180, a = c * Math.cos(hr), b = c * Math.sin(hr)
+  const hr = (h * Math.PI) / 180,
+    a = c * Math.cos(hr),
+    b = c * Math.sin(hr)
   const l_ = l + 0.3963377774 * a + 0.2158037573 * b
   const m = l - 0.1055613458 * a - 0.0638541728 * b
   const s = l - 0.0894841775 * a - 1.291485548 * b
-  const l3 = l_ * l_ * l_, m3 = m * m * m, s3 = s * s * s
+  const l3 = l_ * l_ * l_,
+    m3 = m * m * m,
+    s3 = s * s * s
   let rl = 4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3
   let gl = -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3
   let bl = -0.0041960863 * l3 - 0.7034186147 * m3 + 1.707614701 * s3
-  rl = Math.max(0, Math.min(1, rl)); gl = Math.max(0, Math.min(1, gl)); bl = Math.max(0, Math.min(1, bl))
-  return rgbToHex(Math.round(linearToSrgb(rl) * 255), Math.round(linearToSrgb(gl) * 255), Math.round(linearToSrgb(bl) * 255))
+  rl = Math.max(0, Math.min(1, rl))
+  gl = Math.max(0, Math.min(1, gl))
+  bl = Math.max(0, Math.min(1, bl))
+  return rgbToHex(
+    Math.round(linearToSrgb(rl) * 255),
+    Math.round(linearToSrgb(gl) * 255),
+    Math.round(linearToSrgb(bl) * 255)
+  )
 }
 function getLuminance(hex: string): number {
   const { r, g, b } = hexToRgb(hex)
@@ -125,10 +159,135 @@ function m3Scheme(baseColor: string) {
 export type ThemeEngine = "m3" | "legacy"
 export const THEME_ENGINE: ThemeEngine = "legacy"
 
-export function generateColorPalette(baseColor: string) {
-  return THEME_ENGINE === "m3"
-    ? generateM3Palette(baseColor)
-    : generateLegacyPalette(baseColor)
+export function normalizeThemeColor(input: string): string {
+  const value = input.trim().replace(/^#/, "")
+  if (/^[a-f\d]{3}$/i.test(value))
+    return (
+      "#" +
+      [...value]
+        .map((c) => c + c)
+        .join("")
+        .toLowerCase()
+    )
+  if (/^[a-f\d]{6}$/i.test(value)) return "#" + value.toLowerCase()
+  throw new Error("Use a three- or six-digit hex color")
+}
+
+export function contrastRatio(a: string, b: string): number {
+  const first = getLuminance(a),
+    second = getLuminance(b)
+  return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05)
+}
+
+// Preserve the preferred hue, moving its lightness only as far as needed.
+// Test the final sRGB result, including rounding, instead of assuming an OKLCH
+// lightness threshold is equivalent to readable contrast.
+export function ensureContrast(
+  foreground: string,
+  background: string,
+  minimum = 4.5
+): string {
+  if (contrastRatio(foreground, background) >= minimum) return foreground
+  const target =
+    contrastRatio("#000000", background) > contrastRatio("#ffffff", background)
+      ? 0
+      : 1
+  const { l, c, h } = hexToOklch(foreground)
+  let low = 0,
+    high = 1
+  let result = target ? "#ffffff" : "#000000"
+  for (let i = 0; i < 24; i++) {
+    const amount = (low + high) / 2
+    const candidate = oklchToHex(l + (target - l) * amount, c, h)
+    if (contrastRatio(candidate, background) >= minimum) {
+      result = candidate
+      high = amount
+    } else low = amount
+  }
+  return result
+}
+
+function accessiblePalette(
+  baseColor: string,
+  companion?: string | null,
+  third?: string | null
+) {
+  const generate =
+    THEME_ENGINE === "m3" ? generateM3Palette : generateLegacyPalette
+  const raw = generate(baseColor)
+  // Keep the original vibrant surfaces. Contrast correction belongs to the
+  // foregrounds, so selecting a saturated color never washes out the cards.
+  if (companion) {
+    const cards = generate(companion)
+    raw.surface = cards.surface
+    raw.cardText = cards.cardText
+    raw.cardSecondaryText = cards.cardSecondaryText
+    raw.brand = cards.brand
+    raw.brandForeground = cards.brandForeground
+  }
+  if (third) {
+    const accent = generate(third)
+    raw.brand = accent.brand
+    raw.brandForeground = accent.brandForeground
+  }
+  const text = ensureContrast(raw.text, raw.primary, 7)
+  const cardText = ensureContrast(raw.cardText, raw.surface, 7)
+  const secondaryText = ensureContrast(raw.secondaryText, raw.primary)
+  const cardSecondaryText = ensureContrast(raw.cardSecondaryText, raw.surface)
+  // Muted text appears on both the page and muted panels. Keep both surfaces
+  // on the same side of its contrast range, including middle grays.
+  const pageInk = readableInkOn(raw.primary)
+  const base = ensureContrast(raw.base, pageInk)
+  const mutedForeground =
+    contrastRatio(secondaryText, base) >= 4.5 ? secondaryText : pageInk
+  const { h, c } = hexToOklch(baseColor)
+  const effectSurface = oklchToHex(0.2, Math.min(c, 0.055), h)
+  const effectText = ensureContrast(
+    oklchToHex(0.88, Math.min(c, 0.09), h),
+    effectSurface,
+    7
+  )
+  return {
+    ...raw,
+    base,
+    text,
+    cardText,
+    secondaryText,
+    cardSecondaryText,
+    primaryForeground: readableInkOn(raw.primary),
+    brandForeground: ensureContrast(raw.brandForeground, raw.brand),
+    secondaryForeground: ensureContrast(raw.secondaryForeground, raw.secondary),
+    baseForeground: ensureContrast(raw.text, base),
+    surfaceForeground: cardText,
+    cardHeading: ensureContrast(raw.brand, raw.surface),
+    mutedForeground,
+    border: ensureContrast(raw.brand, raw.primary, 3),
+    cardBorder: ensureContrast(raw.brand, raw.surface, 3),
+    ring: ensureContrast(raw.text, raw.primary, 3),
+    effectSurface,
+    effectText,
+    success: ensureContrast(oklchToHex(0.7, 0.13, 145), raw.surface),
+    warning: ensureContrast(oklchToHex(0.75, 0.14, 75), raw.surface),
+  }
+}
+const paletteCache = new Map<string, ReturnType<typeof accessiblePalette>>()
+export function generateColorPalette(
+  input: string,
+  companion?: string | null,
+  third?: string | null
+) {
+  const baseColor = normalizeThemeColor(input)
+  const second = companion ? normalizeThemeColor(companion) : null
+  const thirdColor = third ? normalizeThemeColor(third) : null
+  const key = `${baseColor}:${second || ""}:${thirdColor || ""}`
+  let palette = paletteCache.get(key)
+  if (!palette) {
+    palette = accessiblePalette(baseColor, second, thirdColor)
+    if (paletteCache.size >= 64)
+      paletteCache.delete(paletteCache.keys().next().value!)
+    paletteCache.set(key, palette)
+  }
+  return palette
 }
 
 // Single automated token generator — M3 roles only
@@ -146,14 +305,23 @@ export function generateM3Palette(baseColor: string) {
   const secondary = hx(s.secondary)
 
   return {
-    primary, primaryForeground: fg,
-    secondary, secondaryForeground: hx(s.onSecondary),
-    brand, brandForeground: hx(s.onPrimary),
-    base: hx(s.surfaceContainerLow), baseForeground: text,
-    surface, surfaceForeground: hx(s.onSurface),
-    text, secondaryText,
-    cardText, cardSecondaryText, cardHeading: cardText,
-    gridBg: primary, gridInk: hx(s.outlineVariant),
+    primary,
+    primaryForeground: fg,
+    secondary,
+    secondaryForeground: hx(s.onSecondary),
+    brand,
+    brandForeground: hx(s.onPrimary),
+    base: hx(s.surfaceContainerLow),
+    baseForeground: text,
+    surface,
+    surfaceForeground: hx(s.onSurface),
+    text,
+    secondaryText,
+    cardText,
+    cardSecondaryText,
+    cardHeading: cardText,
+    gridBg: primary,
+    gridInk: hx(s.outlineVariant),
   }
 }
 
@@ -195,8 +363,16 @@ export function generateLegacyPalette(baseColor: string) {
     base = oklchToHex(Math.min(0.38, oklch.l + 0.07), sC, oklch.h)
   }
 
-  const brand = oklchToHex(Math.max(0.12, oklch.l - 0.08), Math.min(0.28, oklch.c * 1.05), oklch.h)
-  const secondary = oklchToHex(Math.min(0.96, oklch.l + 0.08), Math.max(0, oklch.c * 0.85), oklch.h)
+  const brand = oklchToHex(
+    Math.max(0.12, oklch.l - 0.08),
+    Math.min(0.28, oklch.c * 1.05),
+    oklch.h
+  )
+  const secondary = oklchToHex(
+    Math.min(0.96, oklch.l + 0.08),
+    Math.max(0, oklch.c * 0.85),
+    oklch.h
+  )
 
   // text – OKLCH only, hue-rich
   const tC = isAchromatic ? 0 : Math.min(0.05, oklch.c * 0.55)
@@ -211,13 +387,23 @@ export function generateLegacyPalette(baseColor: string) {
   const cardSecondaryText = oklchToHex(isCardLight ? 0.52 : 0.78, sC, oklch.h)
 
   return {
-    primary, primaryForeground: isLight ? "#000000" : "#FFFFFF",
-    secondary, secondaryForeground: isLight ? "#000000" : "#FFFFFF",
-    brand, brandForeground: isLight ? "#000000" : "#FFFFFF",
-    base, baseForeground: text, surface, surfaceForeground: text,
-    text, secondaryText,
-    cardText, cardSecondaryText, cardHeading: cardText,
-    gridBg, gridInk,
+    primary,
+    primaryForeground: isLight ? "#000000" : "#FFFFFF",
+    secondary,
+    secondaryForeground: isLight ? "#000000" : "#FFFFFF",
+    brand,
+    brandForeground: isLight ? "#000000" : "#FFFFFF",
+    base,
+    baseForeground: text,
+    surface,
+    surfaceForeground: text,
+    text,
+    secondaryText,
+    cardText,
+    cardSecondaryText,
+    cardHeading: cardText,
+    gridBg,
+    gridInk,
   }
 }
 
@@ -228,22 +414,58 @@ export const DEFAULT_COLOR = "#225dd3"
 // context subscription (they update via preview DOM writes, no re-render).
 export const defaultPalette = generateColorPalette(DEFAULT_COLOR)
 
-const THEME_CSS_VARS = ["--primary","--primary-foreground","--secondary","--secondary-soft","--secondary-foreground","--accent","--accent-foreground","--muted","--muted-foreground","--card","--card-foreground","--popover","--popover-foreground","--border","--input","--ring","--surface","--text","--card-text","--card-muted","--grid-bg","--grid-ink","--background","--foreground"] as const
+const THEME_CSS_VARS = [
+  "--primary",
+  "--primary-foreground",
+  "--secondary",
+  "--secondary-soft",
+  "--secondary-foreground",
+  "--accent",
+  "--accent-foreground",
+  "--muted",
+  "--muted-foreground",
+  "--card",
+  "--card-foreground",
+  "--popover",
+  "--popover-foreground",
+  "--border",
+  "--input",
+  "--ring",
+  "--surface",
+  "--text",
+  "--card-text",
+  "--card-muted",
+  "--grid-bg",
+  "--grid-ink",
+  "--background",
+  "--foreground",
+  "--surface-foreground",
+  "--effect-surface",
+  "--effect-text",
+  "--success",
+  "--warning",
+  "color-scheme",
+] as const
 
 // Imperative DOM writer — updates CSS vars without triggering React renders.
 // Used for 60fps drag previews; React state commits separately (throttled).
 export function applyPaletteToDOM(
   palette: ReturnType<typeof generateColorPalette>,
-  isOverridden: boolean,
+  isOverridden: boolean
 ) {
   if (typeof document === "undefined") return
   const r = document.documentElement
   if (!isOverridden) {
     THEME_CSS_VARS.forEach((v) => r.style.removeProperty(v))
+    delete r.dataset.customTheme
+    delete r.dataset.themeTone
     return
   }
   const p = palette
-  const isLight = p.primaryForeground === "#000000"
+  const isLight = getLuminance(p.primary) > 0.179
+  r.dataset.customTheme = "true"
+  r.dataset.themeTone = isLight ? "light" : "dark"
+  r.style.setProperty("color-scheme", isLight ? "light" : "dark")
   const btnPrimary = isLight ? p.brand : p.secondary
   const btnPrimaryFg = isLight ? p.brandForeground : p.secondaryForeground
   r.style.setProperty("--primary", btnPrimary)
@@ -254,15 +476,16 @@ export function applyPaletteToDOM(
   r.style.setProperty("--accent", p.brand)
   r.style.setProperty("--accent-foreground", p.brandForeground)
   r.style.setProperty("--muted", p.base)
-  r.style.setProperty("--muted-foreground", p.secondaryText)
+  r.style.setProperty("--muted-foreground", p.mutedForeground)
   r.style.setProperty("--card", p.surface)
   r.style.setProperty("--card-foreground", p.cardText ?? p.text)
   r.style.setProperty("--popover", p.surface)
   r.style.setProperty("--popover-foreground", p.cardText ?? p.text)
-  r.style.setProperty("--border", p.brand)
-  r.style.setProperty("--input", p.brand)
-  r.style.setProperty("--ring", p.brand)
+  r.style.setProperty("--border", p.border)
+  r.style.setProperty("--input", p.border)
+  r.style.setProperty("--ring", p.ring)
   r.style.setProperty("--surface", p.surface)
+  r.style.setProperty("--surface-foreground", p.cardText)
   r.style.setProperty("--text", p.text)
   r.style.setProperty("--card-text", p.cardText ?? p.text)
   r.style.setProperty("--card-muted", p.cardSecondaryText ?? p.secondaryText)
@@ -270,9 +493,15 @@ export function applyPaletteToDOM(
   r.style.setProperty("--grid-ink", p.gridInk ?? p.text)
   r.style.setProperty("--background", p.primary)
   r.style.setProperty("--foreground", p.text)
+  r.style.setProperty("--effect-surface", p.effectSurface)
+  r.style.setProperty("--effect-text", p.effectText)
+  r.style.setProperty("--success", p.success)
+  r.style.setProperty("--warning", p.warning)
 }
 
 type ThemeColorState = {
+  secondaryColor: string | null
+  tertiaryColor: string | null
   color: string
   palette: ReturnType<typeof generateColorPalette>
   isOverridden: boolean
@@ -280,22 +509,102 @@ type ThemeColorState = {
 
 export function useThemeColor() {
   // Single state object → 1 render per commit instead of 3 (color+palette+flag).
-  // Plain (urgent) setState: commits run inside document.startViewTransition
-  // via flushSync, and are debounced at the provider level — never per-frame.
+  // Commits happen under the provider's duotone reveal via flushSync and are
+  // debounced at the provider level — never per-frame.
   const [state, setState] = useState<ThemeColorState>(() => {
     const palette = generateColorPalette(DEFAULT_COLOR)
-    return { color: DEFAULT_COLOR, palette, isOverridden: false }
+    return {
+      color: DEFAULT_COLOR,
+      secondaryColor: null,
+      tertiaryColor: null,
+      palette,
+      isOverridden: false,
+    }
   })
-  const updatePalette = useCallback((c: string) => {
-    setState({
-      color: c,
-      palette: generateColorPalette(c),
-      isOverridden: c.toLowerCase() !== DEFAULT_COLOR.toLowerCase(),
-    })
+  useEffect(() => {
+    const restore = (value: string | null) => {
+      try {
+        const color = normalizeThemeColor(value || DEFAULT_COLOR)
+        const saved = localStorage.getItem("portfolio-theme-secondary")
+        const secondaryColor = saved ? normalizeThemeColor(saved) : null
+        const thirdSaved = localStorage.getItem("portfolio-theme-tertiary")
+        const tertiaryColor =
+          secondaryColor && thirdSaved ? normalizeThemeColor(thirdSaved) : null
+        setState({
+          color,
+          secondaryColor,
+          tertiaryColor,
+          palette: generateColorPalette(color, secondaryColor, tertiaryColor),
+          isOverridden: color !== DEFAULT_COLOR || !!secondaryColor,
+        })
+      } catch {
+        /* Ignore invalid or old saved preferences. */
+      }
+    }
+    try {
+      restore(localStorage.getItem("portfolio-theme-color"))
+    } catch {
+      /* Storage is optional. */
+    }
+    const sync = (event: StorageEvent) => {
+      if (
+        event.key === "portfolio-theme-color" ||
+        event.key === "portfolio-theme-secondary" ||
+        event.key === "portfolio-theme-tertiary"
+      )
+        restore(localStorage.getItem("portfolio-theme-color"))
+    }
+    window.addEventListener("storage", sync)
+    return () => window.removeEventListener("storage", sync)
   }, [])
+  const updatePalette = useCallback(
+    (
+      input: string,
+      secondaryColor: string | null = null,
+      tertiaryColor: string | null = null
+    ) => {
+      let c: string
+      try {
+        tertiaryColor =
+          secondaryColor && tertiaryColor
+            ? normalizeThemeColor(tertiaryColor)
+            : null
+        c = normalizeThemeColor(input)
+        secondaryColor = secondaryColor
+          ? normalizeThemeColor(secondaryColor)
+          : null
+      } catch {
+        return
+      }
+      try {
+        if (tertiaryColor)
+          localStorage.setItem("portfolio-theme-tertiary", tertiaryColor)
+        else localStorage.removeItem("portfolio-theme-tertiary")
+        if (secondaryColor)
+          localStorage.setItem("portfolio-theme-secondary", secondaryColor)
+        else localStorage.removeItem("portfolio-theme-secondary")
+        if (c === DEFAULT_COLOR)
+          localStorage.removeItem("portfolio-theme-color")
+        else localStorage.setItem("portfolio-theme-color", c)
+      } catch {
+        /* Storage is optional. */
+      }
+      setState({
+        color: c,
+        secondaryColor,
+        tertiaryColor,
+        palette: generateColorPalette(c, secondaryColor, tertiaryColor),
+        isOverridden:
+          c.toLowerCase() !== DEFAULT_COLOR.toLowerCase() || !!secondaryColor,
+      })
+    },
+    []
+  )
   const resetPalette = useCallback(() => {
     setState({
       color: DEFAULT_COLOR,
+      secondaryColor: null,
+      tertiaryColor: null,
       palette: generateColorPalette(DEFAULT_COLOR),
       isOverridden: false,
     })
@@ -305,16 +614,17 @@ export function useThemeColor() {
 
 // Readable ink on top of an arbitrary color (near-black on light, white on dark)
 export function readableInkOn(hex: string): string {
-  const { r, g, b } = hexToRgb(hex)
-  const [rs, gs, bs] = [r, g, b].map((v) => {
-    const n = v / 255
-    return n <= 0.03928 ? n / 12.92 : Math.pow((n + 0.055) / 1.055, 2.4)
-  })
-  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs > 0.35 ? "#141414" : "#FFFFFF"
+  return contrastRatio("#000000", hex) >= contrastRatio("#ffffff", hex)
+    ? "#000000"
+    : "#ffffff"
 }
 
 // Detail ink for ornament: keeps the hue family but is ALWAYS lighter than
 // the card bg, in every theme (mixed toward white, never toward ink).
-export function detailStroke(hueVarWithDashes: string, fallback: string, pct = 45): string {
+export function detailStroke(
+  hueVarWithDashes: string,
+  fallback: string,
+  pct = 45
+): string {
   return `color-mix(in oklab, var(${hueVarWithDashes}, ${fallback}) ${pct}%, white)`
 }

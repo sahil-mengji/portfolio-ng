@@ -125,10 +125,10 @@ export function ShowcaseGrid() {
     >
       <div className="p-6">
         <div className="columns-1 gap-6 sm:columns-2 lg:columns-3">
-          {/* Editorial cell — the home Blogs heading + pills block,
-              preserved as the first cell of the masonry. Static: always
-              first, never paged or filtered away. */}
-          <div className="mb-6 flex min-h-[240px] break-inside-avoid flex-col justify-center bg-background p-5 md:p-6">
+          {/* Editorial cell — the home Blogs heading + pills block.
+              First in flow (top of column one). Static: never paged or
+              filtered away. */}
+          <div className="mb-6 flex min-h-[240px] flex-col justify-center break-inside-avoid bg-background p-5 md:p-6">
             <Text.Subheading className="text-right !text-4xl md:!text-5xl">
               Blogs.
             </Text.Subheading>

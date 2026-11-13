@@ -10,6 +10,7 @@ import {
 } from "motion/react"
 import { cn } from "@/lib/utils"
 import { RiGithubFill } from "@remixicon/react"
+import { ensureContrast, hexToOklch, oklchToHex } from "@/lib/color-utils"
 import { useThemeColorContext } from "@/components/theme-provider"
 
 export type ContributionLevel = 0 | 1 | 2 | 3 | 4
@@ -44,34 +45,45 @@ function useGithubColors(): GithubTheme | null {
   const { palette, isOverridden } = useThemeColorContext()
   return React.useMemo(() => {
     if (!isOverridden) return null
-    const accent: string = palette.brand ?? "#4f46e5"
-    const text: string = palette.text ?? "#171717"
-    const surface: string = palette.surface ?? "#ffffff"
-    const mix = (pct: number) =>
-      `color-mix(in srgb, ${accent} ${pct}%, ${surface})`
-    const tmix = (pct: number) =>
-      `color-mix(in srgb, ${text} ${pct}%, transparent)`
+    const surface = palette.surface
+    const text = palette.cardText
+    const muted = palette.cardSecondaryText
+    const accent = ensureContrast(palette.brand, surface, 4.5)
+    const from = hexToOklch(surface),
+      to = hexToOklch(accent)
+    const level = (amount: number) =>
+      oklchToHex(
+        from.l + (to.l - from.l) * amount,
+        from.c + (to.c - from.c) * amount,
+        to.h
+      )
     return {
-      scale: ["transparent", mix(38), mix(58), mix(80), accent],
-      track: tmix(8),
-      statBg: tmix(6),
-      statText: tmix(72),
+      scale: [
+        "transparent",
+        ensureContrast(level(0.55), surface, 3),
+        level(0.7),
+        level(0.85),
+        accent,
+      ],
+      track: level(0.18),
+      statBg: surface,
+      statText: muted,
       statValue: text,
       tooltipBg: text,
       tooltipFg: surface,
-      monthText: tmix(72),
-      avatarBg: tmix(14),
-      avatarFg: tmix(72),
-      avatarRing: surface,
-      rowHoverVar: tmix(5),
+      monthText: muted,
+      avatarBg: surface,
+      avatarFg: text,
+      avatarRing: palette.cardBorder,
+      rowHoverVar: surface,
       repoName: text,
-      repoCount: tmix(72),
-      chevron: tmix(60),
+      repoCount: muted,
+      chevron: text,
       cardBg: surface,
-      panelBorder: tmix(16),
-      panelBg: `color-mix(in srgb, ${surface} 92%, transparent)`,
-      toggleBg: tmix(8),
-      emptyText: tmix(72),
+      panelBorder: palette.cardBorder,
+      panelBg: surface,
+      toggleBg: surface,
+      emptyText: muted,
     }
   }, [palette, isOverridden])
 }
@@ -316,7 +328,9 @@ const Tooltip = ({
       <motion.div
         ref={ref}
         className="rounded-lg bg-neutral-900 px-2 py-1 text-[11px] font-medium whitespace-nowrap text-white shadow-md"
-        style={t ? { backgroundColor: t.tooltipBg, color: t.tooltipFg } : undefined}
+        style={
+          t ? { backgroundColor: t.tooltipBg, color: t.tooltipFg } : undefined
+        }
         initial={reduceMotion ? false : { opacity: 0, scale: 0.94 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.94 }}
@@ -379,99 +393,103 @@ const ContributionGrid = ({
       {/* months + cells share one x-scroll container — width overflows
           here, never by trimming months or resizing cells. Scrollbar
           hidden: overflow is discoverable via drag/trackpad scroll */}
-      <div className="overflow-x-auto rounded-2xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="[scrollbar-width:none] overflow-x-auto rounded-2xl [&::-webkit-scrollbar]:hidden">
         <div className="w-fit min-w-full rounded-2xl">
-        {showMonths && (
-          <motion.div
-            className="mt-3 flex justify-center"
-            style={{ gap: monthGap, marginBottom: gap }}
-            initial={
-              reduceMotion
-                ? false
-                : { opacity: 0, filter: `blur(${LABEL_BLUR}px)` }
-            }
-            animate={{ opacity: 1, filter: "blur(0px)" }}
-            transition={{
-              ...LABEL_REVEAL,
-              delay: reduceMotion ? 0 : sweepEnd,
-            }}
-          >
-            {visible.map((block) => (
-              <div key={block.key} className="flex" style={{ gap }}>
-                {block.columns.map((_, ci) => (
-                  <div
-                    key={ci}
-                    className="relative h-3 shrink-0"
-                    style={{ width: cellSize }}
-                  >
-                    {ci === 0 && (
-                      <span
-                        className="absolute top-0 left-0 text-[10px] leading-none whitespace-nowrap text-neutral-500"
-                        style={t ? { color: t.monthText } : undefined}
-                      >
-                        {block.label}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </motion.div>
-        )}
-
-        <div
-          className="flex justify-center overflow-hidden pb-5"
-          style={{ gap: monthGap }}
-          onPointerLeave={() => setHovered(undefined)}
-        >
-          {(() => {
-            let gi = 0
-            return visible.map((block) => (
-              <div key={block.key} className="flex" style={{ gap }}>
-                {block.columns.map((column, ci) => {
-                  const index = gi++
-                  return (
-                    <div key={ci} className="flex flex-col" style={{ gap }}>
-                      {column.map((day, di) =>
-                        day ? (
-                          <motion.div
-                            key={day.date}
-                            onPointerEnter={hover(day)}
-                            className="shrink-0 rounded-[3px] bg-neutral-900/[0.08]"
-                            style={{
-                              width: cellSize,
-                              height: cellSize,
-                              ...(t ? { backgroundColor: t.track } : null),
-                            }}
-                            initial={
-                              reduceMotion ? false : { opacity: 0, scale: 0.4 }
-                            }
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{
-                              ...CELL_FADE,
-                              delay: reduceMotion ? 0 : index * COLUMN_STAGGER,
-                            }}
-                          >
-                            <div
-                              className="h-full w-full rounded-[3px]"
-                              style={scale[day.level] ?? scale[0]}
-                            />
-                          </motion.div>
-                        ) : (
-                          <div
-                            key={`blank-${di}`}
-                            aria-hidden
-                            style={{ width: cellSize, height: cellSize }}
-                          />
-                        )
+          {showMonths && (
+            <motion.div
+              className="mt-3 flex justify-center"
+              style={{ gap: monthGap, marginBottom: gap }}
+              initial={
+                reduceMotion
+                  ? false
+                  : { opacity: 0, filter: `blur(${LABEL_BLUR}px)` }
+              }
+              animate={{ opacity: 1, filter: "blur(0px)" }}
+              transition={{
+                ...LABEL_REVEAL,
+                delay: reduceMotion ? 0 : sweepEnd,
+              }}
+            >
+              {visible.map((block) => (
+                <div key={block.key} className="flex" style={{ gap }}>
+                  {block.columns.map((_, ci) => (
+                    <div
+                      key={ci}
+                      className="relative h-3 shrink-0"
+                      style={{ width: cellSize }}
+                    >
+                      {ci === 0 && (
+                        <span
+                          className="absolute top-0 left-0 text-[10px] leading-none whitespace-nowrap text-neutral-500"
+                          style={t ? { color: t.monthText } : undefined}
+                        >
+                          {block.label}
+                        </span>
                       )}
                     </div>
-                  )
-                })}
-              </div>
-            ))
-          })()}
-        </div>
+                  ))}
+                </div>
+              ))}
+            </motion.div>
+          )}
+
+          <div
+            className="flex justify-center overflow-hidden pb-5"
+            style={{ gap: monthGap }}
+            onPointerLeave={() => setHovered(undefined)}
+          >
+            {(() => {
+              let gi = 0
+              return visible.map((block) => (
+                <div key={block.key} className="flex" style={{ gap }}>
+                  {block.columns.map((column, ci) => {
+                    const index = gi++
+                    return (
+                      <div key={ci} className="flex flex-col" style={{ gap }}>
+                        {column.map((day, di) =>
+                          day ? (
+                            <motion.div
+                              key={day.date}
+                              onPointerEnter={hover(day)}
+                              className="shrink-0 rounded-[3px] bg-neutral-900/[0.08]"
+                              style={{
+                                width: cellSize,
+                                height: cellSize,
+                                ...(t ? { backgroundColor: t.track } : null),
+                              }}
+                              initial={
+                                reduceMotion
+                                  ? false
+                                  : { opacity: 0, scale: 0.4 }
+                              }
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{
+                                ...CELL_FADE,
+                                delay: reduceMotion
+                                  ? 0
+                                  : index * COLUMN_STAGGER,
+                              }}
+                            >
+                              <div
+                                className="h-full w-full rounded-[3px]"
+                                style={scale[day.level] ?? scale[0]}
+                              />
+                            </motion.div>
+                          ) : (
+                            <div
+                              key={`blank-${di}`}
+                              aria-hidden
+                              style={{ width: cellSize, height: cellSize }}
+                            />
+                          )
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ))
+            })()}
+          </div>
         </div>
       </div>
 
@@ -562,14 +580,22 @@ const RepoRow = ({
       target="_blank"
       rel="noreferrer"
       className={className}
-      style={t ? ({ "--gh-row-hover": t.rowHoverVar } as React.CSSProperties) : undefined}
+      style={
+        t
+          ? ({ "--gh-row-hover": t.rowHoverVar } as React.CSSProperties)
+          : undefined
+      }
     >
       {content}
     </a>
   ) : (
     <div
       className={className}
-      style={t ? ({ "--gh-row-hover": t.rowHoverVar } as React.CSSProperties) : undefined}
+      style={
+        t
+          ? ({ "--gh-row-hover": t.rowHoverVar } as React.CSSProperties)
+          : undefined
+      }
     >
       {content}
     </div>
@@ -650,10 +676,7 @@ const GitHubActivity = ({
   }
 
   const t = useGithubColors()
-  const scale = React.useMemo(
-    () => toScale(t?.scale ?? accent),
-    [t, accent]
-  )
+  const scale = React.useMemo(() => toScale(t?.scale ?? accent), [t, accent])
   const transition = reduceMotion ? { duration: 0 } : SPRING
   const headerTransition = reduceMotion ? { duration: 0 } : HEADER_SPRING
   const rowTransition = reduceMotion ? { duration: 0 } : ROW_SPRING
@@ -700,7 +723,12 @@ const GitHubActivity = ({
       )}
       // Never wider than the bento cell — excess grid width scrolls
       // inside (see the x-scroll container above), the card never clips.
-      style={{ width, maxWidth: "100%", ...(t ? { backgroundColor: t.cardBg } : null), ...style }}
+      style={{
+        width,
+        maxWidth: "100%",
+        ...(t ? { backgroundColor: t.cardBg } : null),
+        ...style,
+      }}
       {...props}
     >
       <ContributionGrid
@@ -725,7 +753,9 @@ const GitHubActivity = ({
           )}
           style={{
             borderRadius: 18,
-            ...(t ? { borderColor: t.panelBorder, backgroundColor: t.panelBg } : null),
+            ...(t
+              ? { borderColor: t.panelBorder, backgroundColor: t.panelBg }
+              : null),
           }}
           transition={transition}
         >

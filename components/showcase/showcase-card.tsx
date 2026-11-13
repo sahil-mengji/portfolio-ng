@@ -4,6 +4,8 @@ import React, { useState } from "react"
 import { motion } from "motion/react"
 import { ExternalLink } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { LaptopMockupCard } from "@/components/laptop-mockup-card"
+import { PhoneMockupCard } from "@/components/phone-mockup-card"
 
 const COMMON_WRAPPER_CLASSES =
   "group relative border border-line bg-background hover:border-foreground/50 overflow-hidden cursor-pointer transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] rounded-3xl w-full h-full"
@@ -69,10 +71,12 @@ export function ShowcaseCard({
       "max-w-full max-h-full object-contain drop-shadow-md transition-opacity duration-1000"
   } else if (type === "desktop" || type === "web") {
     aspectRatio = "aspect-[4/3]"
+    // Centered slot for the fixed-width laptop mockup (intrinsic 384px
+    // at md) — symmetric crop only on narrower columns.
     imageContainerClasses =
-      "absolute top-10 left-10 z-10 w-full group-hover:-translate-y-2 group-hover:-translate-x-1 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]"
+      "absolute inset-x-0 top-10 z-10 flex justify-center group-hover:-translate-y-2 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]"
     innerImageClasses =
-      "w-full h-full object-cover object-left transition-opacity duration-1000"
+      "h-full w-full object-cover object-top transition-opacity duration-1000"
   } else if (type === "mobile") {
     aspectRatio = "aspect-[4/5]"
     imageContainerClasses =
@@ -160,50 +164,33 @@ export function ShowcaseCard({
 
         <div className={imageContainerClasses}>
           {type === "desktop" || type === "web" ? (
-            <div className="flex aspect-[4/3] w-full flex-col overflow-hidden rounded-tl-2xl border-t border-l border-line bg-background shadow-2xl">
-              <div className="flex h-9 shrink-0 items-center space-x-2 border-b border-line bg-muted/20 px-4">
-                <div className="size-2.5 rounded-full bg-line/60" />
-                <div className="size-2.5 rounded-full bg-line/60" />
-                <div className="size-2.5 rounded-full bg-line/60" />
-              </div>
-              <div className="relative flex-1 overflow-hidden bg-muted/5">
-                <img
-                  src={data.img}
-                  alt={data.title}
-                  decoding="async"
-                  className={cn(
-                    "absolute inset-0 transition-opacity duration-1000",
-                    innerImageClasses,
-                    imgLoaded ? "opacity-100" : "opacity-0"
-                  )}
-                  onLoad={() => setImgLoaded(true)}
-                  loading="lazy"
-                />
-              </div>
-            </div>
+            <LaptopMockupCard className="shrink-0">
+              <img
+                src={data.img}
+                alt={data.title}
+                decoding="async"
+                className={cn(
+                  innerImageClasses,
+                  imgLoaded ? "opacity-100" : "opacity-0"
+                )}
+                onLoad={() => setImgLoaded(true)}
+                loading="lazy"
+              />
+            </LaptopMockupCard>
           ) : type === "mobile" ? (
-            <div className="relative w-[75%]">
-              <div className="absolute top-16 -left-[2px] z-0 h-8 w-[2px] rounded-l-sm bg-line/50" />
-              <div className="absolute top-28 -left-[2px] z-0 h-8 w-[2px] rounded-l-sm bg-line/50" />
-              <div className="absolute top-24 -right-[2px] z-0 h-12 w-[2px] rounded-r-sm bg-line/50" />
-
-              <div className="relative z-10 flex aspect-[9/19] w-full flex-col rounded-t-[2.5rem] border-x border-t border-line bg-muted/20 p-2 pb-0 shadow-2xl">
-                <div className="relative flex-1 overflow-hidden rounded-t-[2rem] border-x border-t border-line bg-background">
-                  <img
-                    src={data.img}
-                    alt={data.title}
-                    decoding="async"
-                    className={cn(
-                      "absolute inset-0 transition-opacity duration-1000",
-                      innerImageClasses,
-                      imgLoaded ? "opacity-100" : "opacity-0"
-                    )}
-                    onLoad={() => setImgLoaded(true)}
-                    loading="lazy"
-                  />
-                </div>
-              </div>
-            </div>
+            <PhoneMockupCard className="shrink-0 shadow-2xl">
+              <img
+                src={data.img}
+                alt={data.title}
+                decoding="async"
+                className={cn(
+                  innerImageClasses,
+                  imgLoaded ? "opacity-100" : "opacity-0"
+                )}
+                onLoad={() => setImgLoaded(true)}
+                loading="lazy"
+              />
+            </PhoneMockupCard>
           ) : (
             <img
               src={data.img}

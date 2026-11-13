@@ -7,7 +7,6 @@ import { Text } from "@/components/ui/text"
 import { BentoGithubBox } from "./boxes/BentoGithubBox"
 import { BentoSocialBox } from "./boxes/BentoSocialBox"
 import { BentoResumeBox } from "./boxes/BentoResumeBox"
-import { BentoLikeBox } from "./boxes/BentoLikeBox"
 import { BentoShowcaseBox } from "./boxes/BentoShowcaseBox"
 import { BentoNftBox } from "./boxes/BentoNftBox"
 import { BentoProjectsBox } from "./boxes/BentoProjectsBox"
@@ -24,23 +23,21 @@ import { BentoBannerBox } from "./boxes/BentoBannerBox"
  *
  * Grid semantics (improved naming):
  * - Container: `bento-grid` (legacy alias: `bentogrid`)
- * - Row 1: notch 3×2 + like 2×2 + projects 2×2 + showcase 3×2 (= 10)
+ * - Row 1: notch 3×2 + projects 3×2 + map 4×2 (= 10)
  * - Row 2: github 8×2 + extra 2×2 (= 10)
- * - Row 3: social 7×1 + resume 3×5 (= 10); colorpicker 3×3 + map 4×2 pack below social (= 7)
- * - Below colorpicker: gallery 3×3; below map: list 2×4 + nft 2×2, then banner 5×2
- * - Rest packs via dense flow.
+ * - Row 3: social 7×1 + resume 3×5 (= 10); colorpicker 3×3 + showcase 4×2 pack below social (= 7)
+ * - Remaining cells pack into open spaces via dense flow.
  * - Areas:
  *   github      → BentoGithubBox      (.bento-github)
  *   social      → BentoSocialBox      (.bento-social)
  *   resume      → BentoResumeBox      (.bento-resume)
- *   like        → BentoLikeBox        (.bento-like)        ← was `homebox2`
- *   showcase    → BentoShowcaseBox    (.bento-showcase)    ← ProjectsFolder
+ *   showcase    → BentoShowcaseBox    (.bento-showcase)    ← empty wide cell
  *   nft         → BentoNftBox         (.bento-nft)
  *   projects    → BentoProjectsBox    (.bento-projects)    ← was `hprojects` (commented in p2)
  *   extra       → BentoExtraBox       (.bento-extra)       ← extra for 7xl
  *   notch       → BentoNotchedBox     (.bento-notch)       ← 3×2 top-left notched SVG, allowOverflow
  *   colorpicker → BentoColorPickerBox (.bento-colorpicker) ← 3×3 wheel + semicircular lightness arc
- *   map         → BentoMapBox         (.bento-map)         ← 4×2 dummy location cell
+ *   map         → BentoMapBox         (.bento-map)         ← 4×2 location cell
  *   gallery     → BentoGalleryBox     (.bento-gallery)     ← 3×3 dummy photo grid
  *   list        → BentoListBox        (.bento-list)        ← 2×4 dummy tall list
  *   banner      → BentoBannerBox      (.bento-banner)      ← 5×2 dummy wide banner
@@ -55,15 +52,14 @@ import { BentoBannerBox } from "./boxes/BentoBannerBox"
 
 const ITEMS = [
   { key: "notch", Comp: BentoNotchedBox, area: "notch" },
-  { key: "like", Comp: BentoLikeBox, area: "like" },
   { key: "projects", Comp: BentoProjectsBox, area: "projects" },
-  { key: "showcase", Comp: BentoShowcaseBox, area: "showcase" },
+  { key: "map", Comp: BentoMapBox, area: "map" },
   { key: "github", Comp: BentoGithubBox, area: "github" },
   { key: "extra", Comp: BentoExtraBox, area: "extra" },
   { key: "social", Comp: BentoSocialBox, area: "social" },
   { key: "resume", Comp: BentoResumeBox, area: "resume" },
   { key: "colorpicker", Comp: BentoColorPickerBox, area: "colorpicker" },
-  { key: "map", Comp: BentoMapBox, area: "map" },
+  { key: "showcase", Comp: BentoShowcaseBox, area: "showcase" },
   { key: "list", Comp: BentoListBox, area: "list" },
   { key: "gallery", Comp: BentoGalleryBox, area: "gallery" },
   { key: "nft", Comp: BentoNftBox, area: "nft" },

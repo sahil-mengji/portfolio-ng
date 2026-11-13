@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useThemeColorContext } from "@/components/theme-provider"
+import type { HandAction } from "@/lib/theme-hand"
 import { hslToHex } from "@/lib/color-utils"
 import { playSfx, playDust, preloadSfx, SFX } from "@/lib/sound"
 
@@ -34,7 +35,11 @@ export function ColorPicker({
   activeCb.current = onActiveChange
   const canvasRef = React.useRef<HTMLCanvasElement>(null)
   const btnRef = React.useRef<HTMLButtonElement>(null)
-  const imgs = React.useRef<{ idle: HTMLImageElement | null; snap: HTMLImageElement | null; time: HTMLImageElement | null }>({
+  const imgs = React.useRef<{
+    idle: HTMLImageElement | null
+    snap: HTMLImageElement | null
+    time: HTMLImageElement | null
+  }>({
     idle: null,
     snap: null,
     time: null,
@@ -80,7 +85,10 @@ export function ColorPicker({
         draw(idle, 0)
       })
       .catch((err) => {
-        console.warn("[Gauntlet] strip preload failed — taps still roll/reset", err)
+        console.warn(
+          "[Gauntlet] strip preload failed — taps still roll/reset",
+          err
+        )
       })
     return () => {
       live = false
@@ -97,23 +105,27 @@ export function ColorPicker({
       img: HTMLImageElement | null,
       onDone: () => void,
       commitFrame = FRAMES,
-      onCommit?: () => void
+      onCommit?: () => void,
+      frameMs = FRAME_MS
     ) => {
       if (!img || busy.current) return
       busy.current = true
       activeCb.current?.(true)
-      let frame = 0
-      let last = performance.now()
+      const started = performance.now()
+      let committed = false
       const step = (now: number) => {
-        if (now - last >= FRAME_MS) {
-          last = now
-          draw(img, frame)
-          frame += 1
-          if (frame === commitFrame) onCommit?.()
+        const frame = Math.min(
+          FRAMES - 1,
+          Math.floor((now - started) / frameMs)
+        )
+        draw(img, frame)
+        if (!committed && frame >= commitFrame - 1) {
+          committed = true
+          onCommit?.()
         }
-        if (frame < FRAMES) {
+        if (now - started < FRAMES * frameMs)
           raf.current = requestAnimationFrame(step)
-        } else {
+        else {
           busy.current = false
           activeCb.current?.(false)
           onDone()
@@ -141,11 +153,20 @@ export function ColorPicker({
   // the corner (mask + sounds always originate here). opts.quiet skips the
   // local random roll (bento already chose). Local taps pass nothing.
   const snap = React.useCallback(
-    (opts: { quiet?: boolean; hex?: string } = {}) => {
+    (
+      opts: {
+        quiet?: boolean
+        hex?: string
+        onCommit?: () => void
+        duration?: number
+      } = {}
+    ) => {
       const img = imgs.current.snap
       playSfx(SFX.snap)
       const commit = () => {
-        if (opts.hex) {
+        if (opts.onCommit) {
+          opts.onCommit()
+        } else if (opts.hex) {
           commitPalette(opts.hex, btnRef.current)
           announce(opts.hex)
         } else if (!opts.quiet) {
@@ -167,26 +188,33 @@ export function ColorPicker({
         () => {
           playDust()
           commit()
-        }
+        },
+        opts.duration ? opts.duration / 34 : FRAME_MS
       )
     },
     [playStrip, roll, commitPalette, draw]
   )
 
-  const reverse = React.useCallback(() => {
-    const img = imgs.current.time
-    playSfx(SFX.reverse)
-    const done = () => {
-      resetPalette(btnRef.current)
-      announce(defaultColor)
-      draw(idleImg(), 0)
-    }
-    if (!img) {
-      done()
-      return
-    }
-    playStrip(img, done)
-  }, [playStrip, resetPalette, defaultColor, draw])
+  const reverse = React.useCallback(
+    (onCommit?: () => void) => {
+      const img = imgs.current.time
+      playSfx(SFX.reverse)
+      const done = () => {
+        if (onCommit) onCommit()
+        else {
+          resetPalette(btnRef.current)
+          announce(defaultColor)
+        }
+        draw(idleImg(), 0)
+      }
+      if (!img) {
+        done()
+        return
+      }
+      playStrip(img, done)
+    },
+    [playStrip, resetPalette, defaultColor, draw]
+  )
 
   // Remote triggers: bento random/reset hands over — gauntlet appears,
   // performs (sounds + mask originate here), then disappears.
@@ -199,9 +227,16 @@ export function ColorPicker({
         return
       }
       if (raw && typeof raw === "object") {
-        const { kind, hex } = raw as { kind: string; hex?: string }
-        if (kind === "snap") snap(hex ? { hex } : { quiet: true })
-        else if (kind === "reverse") reverse()
+        const { kind, hex, onCommit, duration } = raw as HandAction & {
+          hex?: string
+        }
+        if (kind !== "snap" && kind !== "reverse") return
+        e.preventDefault()
+        cancelAnimationFrame(raf.current)
+        busy.current = false
+        if (kind === "snap")
+          snap({ hex, onCommit, duration, quiet: !hex && !onCommit })
+        else reverse(onCommit)
       }
     }
     window.addEventListener("gauntlet:play", onPlay)

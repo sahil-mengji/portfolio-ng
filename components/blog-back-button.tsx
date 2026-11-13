@@ -36,7 +36,7 @@ export function BlogBackButton() {
       <button
         type="button"
         onClick={goBack}
-        className="cursor-pointer underline underline-offset-4"
+        className="cursor-pointer transition-opacity hover:opacity-60"
       >
         ← Back
       </button>

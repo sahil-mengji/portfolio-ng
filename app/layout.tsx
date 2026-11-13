@@ -1,8 +1,12 @@
 import type { Metadata } from "next"
 import "./globals.css"
 import { ViewTransitions } from "next-view-transitions"
+import { NuqsAdapter } from "nuqs/adapters/next/app"
 import { ThemeProvider } from "@/components/theme-provider"
 import { LenisProvider } from "@/components/lenis-provider"
+import { TooltipProvider as BaseTooltipProvider } from "@/components/base/ui/tooltip"
+import { TooltipProvider as RadixTooltipProvider } from "@/components/ui/tooltip"
+import { Toaster } from "@/components/ui/sonner"
 import { fontVariables } from "@/lib/fonts"
 import { Agentation } from "agentation"
 import { cn } from "@/lib/utils"
@@ -31,7 +35,14 @@ export default function RootLayout({
         <ViewTransitions>
           <ThemeProvider>
             {process.env.NODE_ENV === "development" && <Agentation />}
-            <LenisProvider>{children}</LenisProvider>
+            <LenisProvider>
+              <NuqsAdapter>
+                <BaseTooltipProvider>
+                  <RadixTooltipProvider>{children}</RadixTooltipProvider>
+                </BaseTooltipProvider>
+              </NuqsAdapter>
+            </LenisProvider>
+            <Toaster position="top-center" />
           </ThemeProvider>
         </ViewTransitions>
       </body>
